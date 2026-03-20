@@ -6,7 +6,7 @@ import './SettingsModal.css'
 
 function SettingsModal({ onClose }) {
   const { apiConfig, setApiConfig, setModels, models } = useStore()
-  const [baseUrl, setBaseUrl] = useState(apiConfig.baseUrl || 'https://api.openai.com/v1')
+  const [baseUrl, setBaseUrl] = useState(apiConfig.baseUrl || '')
   const [apiKey, setApiKey] = useState(apiConfig.apiKey || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

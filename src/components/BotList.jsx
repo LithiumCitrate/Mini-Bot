@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Add, Setting, Delete, Robot, Message, Text, Caution } from '@icon-park/react'
+import { Add, Setting, Delete, Robot, Message, Text, Caution, ImageFiles } from '@icon-park/react'
 import useStore from '../store/useStore'
 import './BotList.css'
 
@@ -9,20 +9,34 @@ function BotList({ onSettingsClick, onMobileClose }) {
   const [newBotName, setNewBotName] = useState('')
   const [newBotPrompt, setNewBotPrompt] = useState('')
   const [newBotModel, setNewBotModel] = useState('')
+  const [newBotAvatar, setNewBotAvatar] = useState('')
 
   // 按 lastActiveAt 降序排列（最近活动的在前）
   const sortedBots = [...bots].sort((a, b) => (b.lastActiveAt || 0) - (a.lastActiveAt || 0))
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setNewBotAvatar(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleCreateBot = () => {
     if (newBotName.trim()) {
       createBot({ 
         name: newBotName.trim(),
+        avatar: newBotAvatar,
         systemPrompt: newBotPrompt || '你是一个有帮助的AI助手。',
         model: newBotModel || (models[0]?.id || '')
       })
       setNewBotName('')
       setNewBotPrompt('')
       setNewBotModel('')
+      setNewBotAvatar('')
       setShowCreateModal(false)
     }
   }
@@ -120,6 +134,27 @@ function BotList({ onSettingsClick, onMobileClose }) {
           <div className="modal create-bot-modal" onClick={e => e.stopPropagation()}>
             <h3>创建新 Bot</h3>
             
+            {/* Avatar Section */}
+            <div className="create-avatar-section">
+              <div className="create-avatar-preview">
+                {newBotAvatar ? (
+                  <img src={newBotAvatar} alt="avatar" />
+                ) : (
+                  <Robot theme="outline" size="32" fill="#4a90e2" />
+                )}
+              </div>
+              <label className="create-avatar-btn">
+                <ImageFiles theme="outline" size="16" fill="#666" />
+                <span>选择头像</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleAvatarChange}
+                  hidden 
+                />
+              </label>
+            </div>
+
             <div className="form-group">
               <label>名称</label>
               <input

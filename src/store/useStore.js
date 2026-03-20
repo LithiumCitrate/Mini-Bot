@@ -97,7 +97,7 @@ const useStore = create(
           const newMessages = [...messages]
           newMessages[newMessages.length - 1] = {
             ...newMessages[newMessages.length - 1],
-            content
+            content: `${newMessages[newMessages.length - 1].content || ''}${content || ''}`
           }
           
           return {

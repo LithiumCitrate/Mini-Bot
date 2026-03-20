@@ -1,17 +1,28 @@
 import { useState } from 'react'
-import { Add, Setting, Delete, Robot, Message } from '@icon-park/react'
+import { Add, Setting, Delete, Robot, Message, Text } from '@icon-park/react'
 import useStore from '../store/useStore'
 import './BotList.css'
 
 function BotList({ onSettingsClick, onMobileClose }) {
-  const { bots, currentBotId, createBot, setCurrentBot, deleteBot, conversations } = useStore()
+  const { bots, currentBotId, createBot, setCurrentBot, deleteBot, conversations, models } = useStore()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newBotName, setNewBotName] = useState('')
+  const [newBotPrompt, setNewBotPrompt] = useState('')
+  const [newBotModel, setNewBotModel] = useState('')
+
+  // 按 lastActiveAt 降序排列（最近活动的在前）
+  const sortedBots = [...bots].sort((a, b) => (b.lastActiveAt || 0) - (a.lastActiveAt || 0))
 
   const handleCreateBot = () => {
     if (newBotName.trim()) {
-      createBot({ name: newBotName.trim() })
+      createBot({ 
+        name: newBotName.trim(),
+        systemPrompt: newBotPrompt || '你是一个有帮助的AI助手。',
+        model: newBotModel || (models[0]?.id || '')
+      })
       setNewBotName('')
+      setNewBotPrompt('')
+      setNewBotModel('')
       setShowCreateModal(false)
     }
   }
@@ -53,14 +64,14 @@ function BotList({ onSettingsClick, onMobileClose }) {
       </button>
 
       <div className="bot-items">
-        {bots.length === 0 ? (
+        {sortedBots.length === 0 ? (
           <div className="empty-list">
             <Message theme="outline" size="48" fill="#ccc" />
             <p>还没有 Bot</p>
             <p>点击上方按钮创建一个</p>
           </div>
         ) : (
-          bots.map(bot => (
+          sortedBots.map(bot => (
             <div
               key={bot.id}
               className={`bot-item ${currentBotId === bot.id ? 'active' : ''}`}
@@ -98,19 +109,51 @@ function BotList({ onSettingsClick, onMobileClose }) {
 
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal create-bot-modal" onClick={e => e.stopPropagation()}>
             <h3>创建新 Bot</h3>
-            <input
-              type="text"
-              placeholder="输入 Bot 名称"
-              value={newBotName}
-              onChange={(e) => setNewBotName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateBot()}
-              autoFocus
-            />
+            
+            <div className="form-group">
+              <label>名称</label>
+              <input
+                type="text"
+                placeholder="给 Bot 起个名字"
+                value={newBotName}
+                onChange={(e) => setNewBotName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>
+                <Text theme="outline" size="14" fill="#4a90e2" />
+                人格提示词 (可选)
+              </label>
+              <textarea
+                placeholder="设定 Bot 的行为逻辑、语气、身份..."
+                value={newBotPrompt}
+                onChange={(e) => setNewBotPrompt(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            {models.length > 0 && (
+              <div className="form-group">
+                <label>模型 (可选)</label>
+                <select
+                  value={newBotModel}
+                  onChange={(e) => setNewBotModel(e.target.value)}
+                >
+                  <option value="">默认模型</option>
+                  {models.map(model => (
+                    <option key={model.id} value={model.id}>{model.id}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
             <div className="modal-actions">
               <button onClick={() => setShowCreateModal(false)}>取消</button>
-              <button className="primary" onClick={handleCreateBot}>创建</button>
+              <button className="primary" onClick={handleCreateBot} disabled={!newBotName.trim()}>创建</button>
             </div>
           </div>
         </div>

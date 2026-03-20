@@ -49,10 +49,19 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     })
     
     try {
-      // 构建消息历史
+      // 构建消息历史，根据 contextRounds 限制历史轮数
+      const contextRounds = currentBot.contextRounds ?? 10
+      let historyMessages = messages
+      
+      if (contextRounds > 0) {
+        // 每轮对话包含用户消息和助手回复，所以需要取 contextRounds * 2 条消息
+        const maxMessages = contextRounds * 2
+        historyMessages = messages.slice(-maxMessages)
+      }
+      
       const chatMessages = [
         { role: 'system', content: currentBot.systemPrompt },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
+        ...historyMessages.map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: userMessage.content }
       ]
       

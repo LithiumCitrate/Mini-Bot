@@ -239,6 +239,58 @@
   background: #357abd;
 }
 
+/* Create Bot Modal */
+.create-bot-modal {
+  max-width: 450px;
+}
+
+.create-bot-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.create-bot-modal .form-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.create-bot-modal .form-group input,
+.create-bot-modal .form-group textarea,
+.create-bot-modal .form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.create-bot-modal .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.create-bot-modal .form-group select {
+  cursor: pointer;
+  background: #fff;
+}
+
+.create-bot-modal .form-group input:focus,
+.create-bot-modal .form-group textarea:focus,
+.create-bot-modal .form-group select:focus {
+  border-color: #4a90e2;
+}
+
+.create-bot-modal .modal-actions {
+  margin-top: 20px;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .bot-list {
@@ -250,9 +302,108 @@
     height: 100%;
     z-index: 100;
     transition: left 0.3s;
+    border-right: none;
   }
 
   .bot-list.mobile-open {
     left: 0;
+  }
+
+  .bot-list-header {
+    padding: 16px;
+  }
+
+  .bot-list-header h2 {
+    font-size: 18px;
+  }
+
+  .create-bot-btn {
+    margin: 12px;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .bot-item {
+    padding: 10px;
+  }
+
+  .bot-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bot-name {
+    font-size: 14px;
+  }
+
+  .bot-last-msg {
+    font-size: 12px;
+  }
+
+  .delete-btn {
+    opacity: 1;
+  }
+
+  .bot-list-footer {
+    padding: 12px;
+  }
+
+  .settings-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .modal {
+    padding: 20px;
+    max-width: none;
+    width: calc(100% - 32px);
+    margin: 16px;
+  }
+
+  .create-bot-modal {
+    max-width: 450px;
+  }
+
+  .create-bot-modal .form-group {
+    margin-bottom: 16px;
+  }
+
+  .create-bot-modal .form-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .create-bot-modal .form-group input,
+  .create-bot-modal .form-group textarea,
+  .create-bot-modal .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+
+  .create-bot-modal .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  .create-bot-modal .form-group select {
+    cursor: pointer;
+    background: #fff;
+  }
+
+  .create-bot-modal .form-group input:focus,
+  .create-bot-modal .form-group textarea:focus,
+  .create-bot-modal .form-group select:focus {
+    border-color: #4a90e2;
   }
 }

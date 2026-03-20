@@ -34,7 +34,9 @@ const useStore = create(
           model: bot.model || '',
           temperature: bot.temperature || 0.7,
           maxTokens: bot.maxTokens || 2000,
+          contextRounds: bot.contextRounds ?? 10, // 上下文轮数，0表示不限制
           createdAt: Date.now(),
+          lastActiveAt: Date.now(), // 最近活动时间
         }
         set((state) => ({
           bots: [...state.bots, newBot],
@@ -71,12 +73,19 @@ const useStore = create(
       
       // 添加消息
       addMessage: (botId, message) => {
-        set((state) => ({
-          conversations: {
-            ...state.conversations,
-            [botId]: [...(state.conversations[botId] || []), message]
+        set((state) => {
+          const bot = state.bots.find(b => b.id === botId)
+          return {
+            conversations: {
+              ...state.conversations,
+              [botId]: [...(state.conversations[botId] || []), message]
+            },
+            // 更新 Bot 的最近活动时间
+            bots: state.bots.map(b => 
+              b.id === botId ? { ...b, lastActiveAt: Date.now() } : b
+            )
           }
-        }))
+        })
       },
       
       // 更新最后一条消息（用于流式输出）

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Close, Robot, Edit, Text, Adjustment, ImageFiles } from '@icon-park/react'
+import { Close, Robot, Edit, Text, Adjustment, ImageFiles, History } from '@icon-park/react'
 import useStore from '../store/useStore'
 import './BotSettingsModal.css'
 
@@ -10,6 +10,7 @@ function BotSettingsModal({ bot, onClose }) {
   const [systemPrompt, setSystemPrompt] = useState(bot.systemPrompt)
   const [temperature, setTemperature] = useState(bot.temperature)
   const [maxTokens, setMaxTokens] = useState(bot.maxTokens)
+  const [contextRounds, setContextRounds] = useState(bot.contextRounds ?? 10)
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0]
@@ -28,7 +29,8 @@ function BotSettingsModal({ bot, onClose }) {
       avatar,
       systemPrompt,
       temperature,
-      maxTokens
+      maxTokens,
+      contextRounds
     })
     onClose()
   }
@@ -136,6 +138,28 @@ function BotSettingsModal({ bot, onClose }) {
               max={8000}
             />
             <span className="hint">控制 Bot 回复的最大长度</span>
+          </div>
+
+          {/* Context Rounds */}
+          <div className="form-group">
+            <label>
+              <History theme="outline" size="16" fill="#4a90e2" />
+              上下文轮数: {contextRounds === 0 ? '无限制' : contextRounds}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="20"
+              step="1"
+              value={contextRounds}
+              onChange={(e) => setContextRounds(parseInt(e.target.value))}
+            />
+            <div className="range-labels">
+              <span>无限制 (0)</span>
+              <span>10轮</span>
+              <span>20轮</span>
+            </div>
+            <span className="hint">限制对话历史记忆轮数，避免 token 超限</span>
           </div>
         </div>
 

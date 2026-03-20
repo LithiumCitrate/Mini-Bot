@@ -16,6 +16,11 @@ function MainLayout() {
 
   return (
     <div className="main-layout">
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)} />
+      )}
+
       <div className={`bot-list-panel ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <BotList 
           onSettingsClick={() => setShowSettings(true)}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Close, Robot, Edit, Text, Adjustment, ImageFiles, History } from '@icon-park/react'
+import { Close, Robot, Edit, Text, Adjustment, ImageFiles, History, Bookmark } from '@icon-park/react'
 import useStore from '../store/useStore'
 import './BotSettingsModal.css'
 
@@ -11,6 +11,7 @@ function BotSettingsModal({ bot, onClose }) {
   const [temperature, setTemperature] = useState(bot.temperature)
   const [maxTokens, setMaxTokens] = useState(bot.maxTokens)
   const [contextRounds, setContextRounds] = useState(bot.contextRounds ?? 10)
+  const [memory, setMemory] = useState(bot.memory || '')
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0]
@@ -30,7 +31,8 @@ function BotSettingsModal({ bot, onClose }) {
       systemPrompt,
       temperature,
       maxTokens,
-      contextRounds
+      contextRounds,
+      memory
     })
     onClose()
   }
@@ -160,6 +162,21 @@ function BotSettingsModal({ bot, onClose }) {
               <span>20轮</span>
             </div>
             <span className="hint">限制对话历史记忆轮数，避免 token 超限</span>
+          </div>
+          
+          {/* Long-term Memory */}
+          <div className="form-group">
+            <label>
+              <Bookmark theme="outline" size="16" fill="#4a90e2" />
+              长期记忆
+            </label>
+            <textarea
+              value={memory}
+              onChange={(e) => setMemory(e.target.value)}
+              placeholder="用户昵称、偏好、常做任务、语气要求...这部分内容会始终跟随对话发送"
+              rows={3}
+            />
+            <span className="hint">这部分记忆会始终包含在每次对话中，适合存储用户偏好、重要信息等</span>
           </div>
         </div>
 

@@ -1,0 +1,76 @@
+.code-block-wrapper {
+  margin: 8px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.code-language {
+  font-size: 12px;
+  color: #999;
+  text-transform: lowercase;
+  font-family: 'Courier New', monospace;
+}
+
+.code-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.code-fold-btn, .code-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.code-fold-btn:hover, .code-copy-btn:hover {
+  background: #3d3d3d;
+}
+
+.code-content {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 500px;
+  transition: max-height 0.3s ease;
+}
+
+.code-content.collapsed {
+  max-height: 0;
+  padding: 0 12px;
+  overflow: hidden;
+}
+
+.code-content code {
+  font-family: 'Courier New', Courier, monospace;
+  color: #d4d4d4;
+}
+
+/* Syntax highlighting colors */
+.code-content .token.comment { color: #6a9955; }
+.code-content .token.keyword { color: #569cd6; }
+.code-content .token.string { color: #ce9178; }
+.code-content .token.number { color: #b5cea8; }
+.code-content .token.function { color: #dcdcaa; }
+.code-content .token.variable { color: #9cdcfe; }
+.code-content .token.operator { color: #d4d4d4; }

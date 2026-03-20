@@ -59,6 +59,29 @@
   background: #357abd;
 }
 
+/* Search Box */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 12px;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 14px;
+  outline: none;
+}
+
+.search-box input::placeholder {
+  color: #999;
+}
+
 .bot-items {
   flex: 1;
   overflow-y: auto;
@@ -98,6 +121,14 @@
   background: #e8f4fd;
 }
 
+.bot-item.pinned {
+  background: #fffbf0;
+}
+
+.bot-item.pinned.active {
+  background: #fff7e6;
+}
+
 .bot-avatar {
   width: 48px;
   height: 48px;
@@ -108,12 +139,20 @@
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
+  position: relative;
 }
 
 .bot-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.pin-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 12px;
 }
 
 .bot-info {
@@ -127,6 +166,18 @@
   font-weight: 500;
   color: #333;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fork-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #e8f4fd;
+  color: #4a90e2;
+  border-radius: 4px;
+  font-weight: normal;
 }
 
 .bot-last-msg {
@@ -137,24 +188,34 @@
   text-overflow: ellipsis;
 }
 
-.delete-btn {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
+.bot-item-actions {
+  display: flex;
+  gap: 4px;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.bot-item:hover .delete-btn {
+.bot-item:hover .bot-item-actions {
   opacity: 1;
 }
 
-.delete-btn:hover {
+.pin-btn, .delete-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.pin-btn:hover, .delete-btn:hover {
+  background: #e5e5e5;
+}
+
+.pin-btn.active {
+  background: #e8f4fd;
+}
+
+.delete-btn {
   opacity: 0.7;
 }
 
@@ -354,6 +415,82 @@
   margin-top: 20px;
 }
 
+/* Template Section */
+.template-section {
+  margin-bottom: 16px;
+}
+
+.template-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #4a90e2;
+}
+
+.template-header:hover {
+  background: #e5e5e5;
+}
+
+.toggle-icon {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: #f9f9f9;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.template-card:hover {
+  background: #e8f4fd;
+  border-color: #4a90e2;
+}
+
+.template-icon {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.template-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.template-desc {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* Range Labels */
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .bot-list {
@@ -405,6 +542,14 @@
 
   .delete-btn {
     opacity: 1;
+  }
+  
+  .bot-item-actions {
+    opacity: 1;
+  }
+  
+  .template-grid {
+    grid-template-columns: 1fr;
   }
 
   .bot-list-footer {

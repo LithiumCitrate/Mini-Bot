@@ -374,6 +374,122 @@
   cursor: not-allowed;
 }
 
+.stop-btn {
+  background: #ff4d4f;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.stop-btn:hover {
+  background: #ff7875;
+}
+
+/* Edit Mode */
+.edit-container {
+  width: 100%;
+}
+
+.edit-container textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 2px solid #4a90e2;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+  outline: none;
+}
+
+.message-actions .save-edit-btn {
+  background: #f6ffed;
+  border-radius: 4px;
+}
+
+/* Fork Modal */
+.fork-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.fork-modal h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: #333;
+}
+
+.fork-modal p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.fork-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.fork-modal .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.fork-modal .form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.fork-modal .form-group input:focus {
+  border-color: #4a90e2;
+}
+
+.fork-modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.fork-modal .modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.fork-modal .modal-actions button:not(.primary) {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.fork-modal .modal-actions button:not(.primary):hover {
+  background: #e5e5e5;
+}
+
+.fork-modal .modal-actions button.primary {
+  background: #4a90e2;
+  color: #fff;
+}
+
+.fork-modal .modal-actions button.primary:hover {
+  background: #357abd;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .mobile-menu-btn {

@@ -6,7 +6,7 @@ const useStore = create(
     (set, get) => ({
       // API 配置
       apiConfig: {
-        baseUrl: 'https://api.openai.com/v1',
+        baseUrl: '',
         apiKey: '',
       },
       models: [],

@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { 
   Send, Setting, ApplicationMenu, Robot, User, Copy, Delete, 
-  RefreshOne, Down, Up, Loading 
+  RefreshOne, Down, Up, Loading, Caution 
 } from '@icon-park/react'
 import useStore from '../store/useStore'
 import { sendChatMessage } from '../utils/api'
@@ -30,6 +30,16 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   
   const handleSend = async () => {
     if (!input.trim() || isLoading || !currentBot) return
+    
+    // 检查 API 配置
+    if (!apiConfig.apiKey) {
+      addMessage(currentBotId, {
+        role: 'assistant',
+        content: '⚠️ 请先在「全局设置」中配置 API Key 后再开始对话。',
+        timestamp: Date.now()
+      })
+      return
+    }
     
     const userMessage = {
       role: 'user',
@@ -120,6 +130,9 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     setShowModelSelect(false)
   }
   
+  // 检查是否已配置 API
+  const isApiConfigured = !!apiConfig.apiKey
+  
   if (!currentBot) {
     return (
       <div className="chat-window empty">
@@ -134,6 +147,14 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   
   return (
     <div className="chat-window">
+      {/* API 未配置提示 */}
+      {!isApiConfigured && (
+        <div className="api-warning">
+          <Caution theme="outline" size="16" fill="#faad14" />
+          <span>请先在「全局设置」中配置 API Key</span>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="chat-header">
         <button className="mobile-menu-btn" onClick={onMobileMenuToggle}>

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Add, Setting, Delete, Robot, Message, Text } from '@icon-park/react'
+import { Add, Setting, Delete, Robot, Message, Text, Caution } from '@icon-park/react'
 import useStore from '../store/useStore'
 import './BotList.css'
 
 function BotList({ onSettingsClick, onMobileClose }) {
-  const { bots, currentBotId, createBot, setCurrentBot, deleteBot, conversations, models } = useStore()
+  const { bots, currentBotId, createBot, setCurrentBot, deleteBot, conversations, models, apiConfig } = useStore()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newBotName, setNewBotName] = useState('')
   const [newBotPrompt, setNewBotPrompt] = useState('')
@@ -54,6 +54,14 @@ function BotList({ onSettingsClick, onMobileClose }) {
           Mini Bot
         </h2>
       </div>
+
+      {/* API 未配置提示 */}
+      {!apiConfig.apiKey && (
+        <div className="api-warning-banner" onClick={onSettingsClick}>
+          <Caution theme="outline" size="16" fill="#faad14" />
+          <span>请配置 API Key</span>
+        </div>
+      )}
 
       <button 
         className="create-bot-btn"

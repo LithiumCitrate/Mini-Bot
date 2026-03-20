@@ -19,6 +19,26 @@
   color: #333;
 }
 
+/* API Warning Banner */
+.api-warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 12px;
+  padding: 10px 12px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #d48806;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.api-warning-banner:hover {
+  background: #fff1b8;
+}
+
 .create-bot-btn {
   display: flex;
   align-items: center;

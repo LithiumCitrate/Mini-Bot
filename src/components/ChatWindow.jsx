@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -7,10 +7,10 @@ import 'katex/dist/katex.min.css'
 import { 
   Send, Setting, ApplicationMenu, Robot, User, Copy, Delete, 
   RefreshOne, Down, Loading, Caution, Pause, Edit, Fork,
-  CheckOne, Close, Bookmark
+  CheckOne, Close, Bookmark, Eyes, PictureOne, CloseSmall
 } from '@icon-park/react'
 import useStore from '../store/useStore'
-import { sendChatMessage, tavilySearch } from '../utils/api'
+import { sendChatMessage, tavilySearch, isMultimodalModel } from '../utils/api'
 import CodeBlock from './CodeBlock'
 import './ChatWindow.css'
 
@@ -81,11 +81,23 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   const [showForkModal, setShowForkModal] = useState(null)
   const [forkName, setForkName] = useState('')
   const [showMemoryPanel, setShowMemoryPanel] = useState(false)
+  const [pendingImages, setPendingImages] = useState([]) // 待发送的图片列表
   const messagesEndRef = useRef(null)
-  const inputRef = useRef(null)
+  const imageInputRef = useRef(null)
   
   const currentBot = bots.find(bot => bot.id === currentBotId)
   const messages = conversations[currentBotId] || []
+  
+  // 判断当前模型是否为多模态模型
+  const isCurrentModelMultimodal = useMemo(() => {
+    const modelId = currentBot?.model || models[0]?.id
+    if (!modelId) return false
+    // 优先使用 models 列表中的 isMultimodal 属性
+    const modelInfo = models.find(m => m.id === modelId)
+    if (modelInfo?.isMultimodal !== undefined) return modelInfo.isMultimodal
+    // 否则使用判断函数
+    return isMultimodalModel(modelId)
+  }, [currentBot?.model, models])
   
   // Load draft when switching bots
   useEffect(() => {
@@ -109,9 +121,41 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
   
+  // 处理图片上传
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    
+    files.forEach(file => {
+      if (!file.type.startsWith('image/')) return
+      
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPendingImages(prev => [...prev, {
+          id: Date.now() + Math.random(),
+          data: reader.result, // base64 data URL
+          name: file.name
+        }])
+      }
+      reader.readAsDataURL(file)
+    })
+    
+    // 清空 input 以便重复选择同一文件
+    e.target.value = ''
+  }
+  
+  // 移除待发送的图片
+  const handleRemoveImage = (imageId) => {
+    setPendingImages(prev => prev.filter(img => img.id !== imageId))
+  }
+  
   const handleSend = async (customMessage = null) => {
     const messageContent = customMessage || input.trim()
-    if (!messageContent || isLoading || !currentBot) return
+    const hasImages = pendingImages.length > 0
+    
+    // 如果没有文本且没有图片，不发送
+    if (!messageContent && !hasImages) return
+    if (isLoading || !currentBot) return
     
     // 检查 API 配置
     if (!apiConfig.apiKey) {
@@ -126,7 +170,9 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     const userMessage = {
       role: 'user',
       content: messageContent,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      // 如果有图片，保存图片数据用于显示
+      images: hasImages ? pendingImages.map(img => img.data) : undefined
     }
     
     addMessage(currentBotId, userMessage)
@@ -134,6 +180,10 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       setInput('')
       setDraft(currentBotId, '')
     }
+    // 清空待发送的图片
+    const imagesToSend = [...pendingImages]
+    setPendingImages([])
+    
     setIsLoading(true)
     
     // Create AbortController for this request
@@ -158,10 +208,47 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
         historyMessages = messages.slice(-maxMessages)
       }
       
+      // 构建当前用户消息（可能包含图片）
+      let currentUserMsg
+      if (hasImages && isCurrentModelMultimodal) {
+        // 多模态格式：content 为数组
+        currentUserMsg = {
+          role: 'user',
+          content: [
+            ...imagesToSend.map(img => ({
+              type: 'image_url',
+              image_url: { url: img.data }
+            })),
+            { type: 'text', text: messageContent || '请描述这张图片' }
+          ]
+        }
+      } else {
+        // 纯文本格式
+        currentUserMsg = { role: 'user', content: messageContent }
+      }
+      
+      // 构建历史消息（历史消息中的图片也需要特殊处理）
+      const formattedHistory = historyMessages.map(m => {
+        // 如果历史消息有图片且当前模型支持多模态，使用多模态格式
+        if (m.images && m.images.length > 0 && isCurrentModelMultimodal) {
+          return {
+            role: m.role,
+            content: [
+              ...m.images.map(imgData => ({
+                type: 'image_url',
+                image_url: { url: imgData }
+              })),
+              { type: 'text', text: m.content || '' }
+            ]
+          }
+        }
+        return { role: m.role, content: m.content }
+      })
+      
       const chatMessages = [
         { role: 'system', content: currentBot.systemPrompt + (currentBot.memory ? `\n\n[长期记忆]\n${currentBot.memory}` : '') },
-        ...historyMessages.map(m => ({ role: m.role, content: m.content })),
-        { role: 'user', content: userMessage.content }
+        ...formattedHistory,
+        currentUserMsg
       ]
       
       const model = currentBot.model || models[0]?.id
@@ -228,8 +315,8 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             // 重新请求模型处理搜索结果
             const newChatMessages = [
               { role: 'system', content: currentBot.systemPrompt + (currentBot.memory ? `\n\n[长期记忆]\n${currentBot.memory}` : '') },
-              ...historyMessages.map(m => ({ role: m.role, content: m.content })),
-              { role: 'user', content: userMessage.content },
+              ...formattedHistory,
+              { role: 'user', content: messageContent },
               assistantMessage,
               ...toolResultsMessages
             ]
@@ -398,7 +485,12 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
                   className={`model-option ${currentBot.model === model.id ? 'active' : ''}`}
                   onClick={() => handleModelChange(model.id)}
                 >
-                  {model.id}
+                  <span className="model-name">{model.id}</span>
+                  {model.isMultimodal && (
+                    <span className="multimodal-badge" title="支持图像输入">
+                      <Eyes theme="outline" size="14" fill="#4a90e2" />
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -459,6 +551,14 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
                   </div>
                 ) : (
                   <div className="message-bubble">
+                    {/* 显示用户消息中的图片 */}
+                    {msg.role === 'user' && msg.images && msg.images.length > 0 && (
+                      <div className="message-images">
+                        {msg.images.map((imgData, imgIndex) => (
+                          <img key={imgIndex} src={imgData} alt={`图片 ${imgIndex + 1}`} />
+                        ))}
+                      </div>
+                    )}
                     {msg.role === 'assistant' ? (
                       <ReactMarkdown 
                         remarkPlugins={[remarkGfm, remarkMath]}
@@ -560,13 +660,49 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             <Bookmark theme="outline" size="16" fill={showMemoryPanel ? '#4a90e2' : '#999'} />
           </button>
         )}
+        
+        {/* Pending images preview */}
+        {pendingImages.length > 0 && (
+          <div className="pending-images">
+            {pendingImages.map(img => (
+              <div key={img.id} className="pending-image">
+                <img src={img.data} alt={img.name} />
+                <button 
+                  className="remove-image-btn"
+                  onClick={() => handleRemoveImage(img.id)}
+                  title="移除图片"
+                >
+                  <CloseSmall theme="outline" size="12" fill="#fff" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
         <div className="input-container">
+          {/* Image upload button */}
+          <button 
+            className={`image-upload-btn ${!isCurrentModelMultimodal ? 'disabled' : ''}`}
+            onClick={() => imageInputRef.current?.click()}
+            disabled={!isCurrentModelMultimodal}
+            title={isCurrentModelMultimodal ? '上传图片' : '当前模型不支持图片'}
+          >
+            <PictureOne theme="outline" size="20" fill={isCurrentModelMultimodal ? '#666' : '#ccc'} />
+          </button>
+          <input 
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageUpload}
+            hidden
+          />
+          
           <textarea
-            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+            placeholder={isCurrentModelMultimodal ? "输入消息... (Enter 发送, Shift+Enter 换行)" : "输入消息... (当前模型不支持图片)"}
             rows={1}
             disabled={isLoading}
           />
@@ -593,7 +729,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             <button 
               className="send-btn"
               onClick={() => handleSend()}
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && pendingImages.length === 0) || isLoading}
             >
               {isLoading ? (
                 <Loading theme="outline" size="20" fill="#fff" />

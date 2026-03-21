@@ -1,5 +1,59 @@
 // API 工具函数
 
+// 多模态模型关键词列表（常见的支持图像/视觉的模型）
+const MULTIMODAL_KEYWORDS = [
+  'vision', 'gpt-4o', 'gpt-4-turbo', 'gpt-4-1106', 'gpt-4-0125', 'gpt-4-vision',
+  'claude-3', 'claude-3.5', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku',
+  'gemini', 'gemini-1', 'gemini-2', 'gemini-pro-vision',
+  'llava', 'cogvlm', 'qwen-vl', 'yi-vl', 'deepseek-vl',
+  'internvl', 'molmo', 'pixtral',
+  'o1-', 'o3-',  // OpenAI o 系列也支持多模态
+  'chatgpt-4o', 'chatgpt-4-vision'
+]
+
+// 非多模态模型关键词（明确不支持视觉的模型）
+const NON_MULTIMODAL_KEYWORDS = [
+  'gpt-3.5', 'gpt-35', 'text-davinci', 'davinci',
+  'claude-2', 'claude-instant', 'claude-1',
+  'llama-2', 'llama2', 'llama-3', 'llama3', 'llama-3.1', 'llama-3.2-text',
+  'mistral', 'mixtral', 'codellama', 'code-llama',
+  'qwen2', 'qwen-2', 'deepseek-coder', 'deepseek-chat',
+  'yi-', 'chatglm', 'baichuan', 'internlm'
+]
+
+/**
+ * 判断模型是否为多模态模型
+ * @param {string} modelId - 模型 ID
+ * @returns {boolean} - 是否为多模态模型
+ */
+export function isMultimodalModel(modelId) {
+  if (!modelId || typeof modelId !== 'string') return false
+  
+  const lowerId = modelId.toLowerCase()
+  
+  // 先检查是否明确是非多模态模型
+  for (const keyword of NON_MULTIMODAL_KEYWORDS) {
+    if (lowerId.includes(keyword.toLowerCase())) {
+      // 但如果同时包含多模态关键词，则认为是多模态（如 llava-llama）
+      for (const mmKeyword of MULTIMODAL_KEYWORDS) {
+        if (lowerId.includes(mmKeyword.toLowerCase())) {
+          return true
+        }
+      }
+      return false
+    }
+  }
+  
+  // 检查是否包含多模态关键词
+  for (const keyword of MULTIMODAL_KEYWORDS) {
+    if (lowerId.includes(keyword.toLowerCase())) {
+      return true
+    }
+  }
+  
+  return false
+}
+
 // 定义 save_memory 工具
 export const memoryTools = [
   {
@@ -176,7 +230,14 @@ export async function fetchModels(baseUrl, apiKey) {
   
   try {
     const data = await response.json()
-    return data.data || []
+    const rawModels = data.data || []
+    
+    // 为每个模型添加 isMultimodal 属性
+    return rawModels.map(model => ({
+      ...model,
+      id: model.id || model.name || model,
+      isMultimodal: isMultimodalModel(model.id || model.name || model)
+    }))
   } catch (error) {
     throw new Error('响应格式错误：服务器返回了非 JSON 数据')
   }

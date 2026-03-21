@@ -240,7 +240,7 @@ function SettingsModal({ onClose }) {
             <div className="form-group toggle-group">
               <label>启用网页搜索</label>
               <button 
-                className={`toggle-btn ${tavilyEnabled ? 'active' : ''}`}
+                className={`toggle-btn tavily-toggle ${tavilyEnabled ? 'active' : ''}`}
                 onClick={() => setTavilyEnabled(!tavilyEnabled)}
               >
                 {tavilyEnabled ? '开启' : '关闭'}

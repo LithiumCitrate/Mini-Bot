@@ -327,7 +327,7 @@ function BotList({ onSettingsClick, onMobileClose }) {
               <div className="range-labels">
                 <span>精确</span>
                 <span>平衡</span>
-                <span>创造</span>
+                <span>创意</span>
               </div>
             </div>
             

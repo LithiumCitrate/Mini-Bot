@@ -131,7 +131,7 @@ function BotSettingsModal({ bot, onClose }) {
             <div className="range-labels">
               <span>精确 (0)</span>
               <span>平衡 (1)</span>
-              <span>创造 (2)</span>
+              <span>创意 (2)</span>
             </div>
           </div>
 

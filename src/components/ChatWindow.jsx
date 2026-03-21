@@ -434,7 +434,9 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     return (
       <div className="chat-window empty">
         <div className="empty-state">
-          <Robot theme="outline" size="80" fill="#ccc" />
+          <div className="empty-icon">
+            <Robot theme="outline" size="80" fill="currentColor" />
+          </div>
           <h2>选择或创建一个 Bot 开始聊天</h2>
           <p>左侧列表中选择已有的 Bot，或点击"新建 Bot"创建新的助手</p>
         </div>

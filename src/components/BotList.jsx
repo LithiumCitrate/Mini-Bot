@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Add, Setting, Delete, Robot, Message, Text, Caution, ImageFiles, Bookmark, Search, Pin, Tag } from '@icon-park/react'
+import { Add, Setting, Delete, Robot, Message, Text, Caution, ImageFiles, Bookmark, Search, Pin } from '@icon-park/react'
 import useStore from '../store/useStore'
 import './BotList.css'
 
@@ -65,7 +65,6 @@ function BotList({ onSettingsClick, onMobileClose }) {
   const [newBotTemperature, setNewBotTemperature] = useState(0.7)
   const [showTemplates, setShowTemplates] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedTags, setSelectedTags] = useState([])
 
   // 按 pinned 和 lastActiveAt 排序
   const sortedBots = [...bots].sort((a, b) => {

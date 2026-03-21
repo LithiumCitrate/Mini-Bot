@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Close, Api, Key, Refresh, CheckOne, Loading, Download, Upload, 
+import { Close, Api, Refresh, CheckOne, Loading, Download, Upload, 
   Connection, Delete, Sun, Moon, Setting, Search
 } from '@icon-park/react'
 import useStore from '../store/useStore'

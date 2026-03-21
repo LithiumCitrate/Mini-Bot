@@ -6,7 +6,7 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { 
   Send, Setting, ApplicationMenu, Robot, User, Copy, Delete, 
-  RefreshOne, Down, Up, Loading, Caution, Pause, Edit, Fork,
+  RefreshOne, Down, Loading, Caution, Pause, Edit, Fork,
   CheckOne, Close, Bookmark
 } from '@icon-park/react'
 import useStore from '../store/useStore'
@@ -68,7 +68,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   const { 
     apiConfig, models, bots, currentBotId, conversations,
     addMessage, updateLastMessage, clearConversation, deleteMessage, updateBot,
-    setAbortController, stopGeneration, abortController,
+    setAbortController, stopGeneration,
     setDraft, getDraft, forkConversation, updateMessage, deleteMessagesFrom,
     tavilyConfig
   } = useStore()
@@ -217,9 +217,11 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             }))
             
             // 将助手消息和工具结果添加到消息历史
+            // 从 store 获取最新的消息内容（流式输出后的完整内容）
+            const latestMessages = useStore.getState().conversations[currentBotId] || []
             const assistantMessage = {
               role: 'assistant',
-              content: messages[messages.length - 1]?.content || '',
+              content: latestMessages[latestMessages.length - 1]?.content || '',
               tool_calls: result.toolCalls
             }
             
@@ -316,11 +318,13 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   const handleRegenerate = async (index) => {
     if (index < 1 || isLoading) return
     
+    // Get the user message before deleting (using current messages reference)
+    const lastUserMsg = messages[index - 1]
+    
     // Delete assistant message at index
     deleteMessagesFrom(currentBotId, index)
     
     // Resend the user message before
-    const lastUserMsg = messages[index - 1]
     if (lastUserMsg?.role === 'user') {
       setTimeout(() => handleSend(lastUserMsg.content), 100)
     }

@@ -90,19 +90,16 @@ const useStore = create(
       
       // 添加消息
       addMessage: (botId, message) => {
-        set((state) => {
-          const bot = state.bots.find(b => b.id === botId)
-          return {
-            conversations: {
-              ...state.conversations,
-              [botId]: [...(state.conversations[botId] || []), message]
-            },
-            // 更新 Bot 的最近活动时间
-            bots: state.bots.map(b => 
-              b.id === botId ? { ...b, lastActiveAt: Date.now() } : b
-            )
-          }
-        })
+        set((state) => ({
+          conversations: {
+            ...state.conversations,
+            [botId]: [...(state.conversations[botId] || []), message]
+          },
+          // 更新 Bot 的最近活动时间
+          bots: state.bots.map(b => 
+            b.id === botId ? { ...b, lastActiveAt: Date.now() } : b
+          )
+        }))
       },
       
       // 更新最后一条消息（用于流式输出）
@@ -153,6 +150,9 @@ const useStore = create(
       updateMessage: (botId, messageIndex, newContent) => {
         set((state) => {
           const messages = state.conversations[botId] || []
+          // 边界检查
+          if (messageIndex < 0 || messageIndex >= messages.length) return state
+          
           const newMessages = [...messages]
           newMessages[messageIndex] = { ...newMessages[messageIndex], content: newContent }
           return {
@@ -168,6 +168,9 @@ const useStore = create(
       deleteMessagesFrom: (botId, fromIndex) => {
         set((state) => {
           const messages = state.conversations[botId] || []
+          // 边界检查：fromIndex 超出范围时不做任何操作
+          if (fromIndex < 0 || fromIndex > messages.length) return state
+          
           return {
             conversations: {
               ...state.conversations,

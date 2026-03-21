@@ -126,10 +126,20 @@ export async function testConnection(baseUrl, apiKey) {
       modelCount: data.data?.length || 0,
       isCompatible: Array.isArray(data.data)
     }
-  } catch ({ error, response }) {
+  } catch (err) {
+    // 处理两种情况：1. 抛出的 { error, response } 对象  2. 网络错误
+    if (err && typeof err === 'object' && 'error' in err && 'response' in err) {
+      const { error, response } = err
+      return {
+        success: false,
+        error: parseError(error, response),
+        responseTime: Date.now() - startTime
+      }
+    }
+    // 网络错误或其他异常
     return {
       success: false,
-      error: parseError(error, response),
+      error: parseError(err, null),
       responseTime: Date.now() - startTime
     }
   }
@@ -139,21 +149,28 @@ export async function testConnection(baseUrl, apiKey) {
 export async function fetchModels(baseUrl, apiKey) {
   const url = `${baseUrl}/models`
   
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
-  }).catch(error => {
+  let response
+  try {
+    response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
+  } catch (error) {
     throw new Error(parseError(error))
-  })
+  }
   
   if (!response.ok) {
     throw new Error(parseError(null, response))
   }
   
-  const data = await response.json()
-  return data.data || []
+  try {
+    const data = await response.json()
+    return data.data || []
+  } catch (error) {
+    throw new Error('响应格式错误：服务器返回了非 JSON 数据')
+  }
 }
 
 // 发送聊天消息（流式）

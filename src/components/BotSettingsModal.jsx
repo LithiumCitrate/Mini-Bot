@@ -5,14 +5,17 @@ import './BotSettingsModal.css'
 
 function BotSettingsModal({ bot, onClose }) {
   const { updateBot, deleteBot } = useStore()
-  const [name, setName] = useState(bot.name)
-  const [avatar, setAvatar] = useState(bot.avatar)
-  const [systemPrompt, setSystemPrompt] = useState(bot.systemPrompt)
-  const [temperature, setTemperature] = useState(bot.temperature)
-  const [maxTokens, setMaxTokens] = useState(bot.maxTokens)
-  const [contextRounds, setContextRounds] = useState(bot.contextRounds ?? 10)
-  const [memory, setMemory] = useState(bot.memory || '')
-  const [memoryEnabled, setMemoryEnabled] = useState(bot.memoryEnabled ?? false)
+  const [name, setName] = useState(bot?.name || '')
+  const [avatar, setAvatar] = useState(bot?.avatar || '')
+  const [systemPrompt, setSystemPrompt] = useState(bot?.systemPrompt || '')
+  const [temperature, setTemperature] = useState(bot?.temperature ?? 0.7)
+  const [maxTokens, setMaxTokens] = useState(bot?.maxTokens ?? 2000)
+  const [contextRounds, setContextRounds] = useState(bot?.contextRounds ?? 10)
+  const [memory, setMemory] = useState(bot?.memory || '')
+  const [memoryEnabled, setMemoryEnabled] = useState(bot?.memoryEnabled ?? false)
+
+  // 防护：bot 为空时不渲染
+  if (!bot) return null
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0]
@@ -26,8 +29,9 @@ function BotSettingsModal({ bot, onClose }) {
   }
 
   const handleSave = () => {
+    if (!name.trim()) return
     updateBot(bot.id, {
-      name,
+      name: name.trim(),
       avatar,
       systemPrompt,
       temperature,

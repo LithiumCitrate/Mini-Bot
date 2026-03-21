@@ -74,7 +74,7 @@ const errorMessages = {
 
 // 解析错误
 function parseError(error, response) {
-  if (error.name === 'AbortError') {
+  if (error?.name === 'AbortError') {
     return '生成已停止'
   }
   
@@ -92,11 +92,11 @@ function parseError(error, response) {
     }
   }
   
-  if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+  if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError')) {
     return '网络连接失败，请检查网络或 Base URL 是否正确'
   }
   
-  return error.message || '未知错误'
+  return error?.message || '未知错误'
 }
 
 // 测试 API 连接
@@ -118,7 +118,16 @@ export async function testConnection(baseUrl, apiKey) {
       throw { error, response }
     }
     
-    const data = await response.json()
+    let data
+    try {
+      data = await response.json()
+    } catch (e) {
+      return {
+        success: false,
+        error: '响应格式错误：服务器返回了非 JSON 数据',
+        responseTime: Date.now() - startTime
+      }
+    }
     
     return {
       success: true,
@@ -211,6 +220,10 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
     throw new Error(parseError(null, response))
   }
   
+  if (!response.body) {
+    throw new Error('响应体为空，无法读取流式数据')
+  }
+  
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
@@ -283,29 +296,44 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
 export async function tavilySearch(apiKey, query, searchDepth = 'basic') {
   const url = 'https://api.tavily.com/search'
   
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      query,
-      search_depth: searchDepth,
-      include_answer: true,
-      include_raw_content: false,
-      max_results: 5,
-      include_images: true,
-      include_image_descriptions: true
+  let response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        query,
+        search_depth: searchDepth,
+        include_answer: true,
+        include_raw_content: false,
+        max_results: 5,
+        include_images: true,
+        include_image_descriptions: true
+      })
     })
-  })
+  } catch (error) {
+    throw new Error(`网络请求失败: ${error.message}`)
+  }
   
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
+    let errorData = {}
+    try {
+      errorData = await response.json()
+    } catch (e) {
+      // 忽略 JSON 解析错误
+    }
     throw new Error(errorData.detail || `Tavily API 错误 (${response.status})`)
   }
   
-  const data = await response.json()
+  let data
+  try {
+    data = await response.json()
+  } catch (error) {
+    throw new Error('Tavily 响应格式错误：服务器返回了非 JSON 数据')
+  }
   
   // 格式化搜索结果
   let result = ''

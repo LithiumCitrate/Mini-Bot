@@ -281,6 +281,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   }
   
   const handleEdit = (index) => {
+    if (index < 0 || index >= messages.length) return
     setEditingIndex(index)
     setEditContent(messages[index].content)
   }
@@ -303,6 +304,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   }
   
   const handleFork = (index) => {
+    if (index < 0 || index >= messages.length) return
     setShowForkModal(index)
     setForkName(`${currentBot.name} (分支)`)
   }
@@ -462,7 +464,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
                         components={{
-                          code({ node, inline, className, children, ...props }) {
+                          code({ inline, className, children, ...props }) {
                             if (inline) {
                               return <code className={className} {...props}>{children}</code>
                             }

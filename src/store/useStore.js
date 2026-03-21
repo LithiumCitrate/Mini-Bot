@@ -137,6 +137,9 @@ const useStore = create(
       deleteMessage: (botId, messageIndex) => {
         set((state) => {
           const messages = state.conversations[botId] || []
+          // 边界检查
+          if (messageIndex < 0 || messageIndex >= messages.length) return state
+          
           return {
             conversations: {
               ...state.conversations,
@@ -213,20 +216,26 @@ const useStore = create(
       forkConversation: (fromBotId, fromIndex, newBotName) => {
         const state = get()
         const messages = state.conversations[fromBotId] || []
-        const forkedMessages = messages.slice(0, fromIndex + 1)
         const sourceBot = state.bots.find(b => b.id === fromBotId)
+        
+        // 验证：源 Bot 不存在或消息索引越界时返回 null
+        if (!sourceBot || fromIndex < 0 || fromIndex >= messages.length) {
+          return null
+        }
+        
+        const forkedMessages = messages.slice(0, fromIndex + 1)
         
         const newBot = {
           id: Date.now().toString(),
-          name: newBotName || `${sourceBot?.name || 'Bot'} (分支)`,
-          avatar: sourceBot?.avatar || '',
-          systemPrompt: sourceBot?.systemPrompt || '你是一个有帮助的AI助手。',
-          model: sourceBot?.model || '',
-          temperature: sourceBot?.temperature || 0.7,
-          maxTokens: sourceBot?.maxTokens || 2000,
-          contextRounds: sourceBot?.contextRounds ?? 10,
-          memory: sourceBot?.memory || '',
-          memoryEnabled: sourceBot?.memoryEnabled ?? false,
+          name: newBotName || `${sourceBot.name} (分支)`,
+          avatar: sourceBot.avatar || '',
+          systemPrompt: sourceBot.systemPrompt || '你是一个有帮助的AI助手。',
+          model: sourceBot.model || '',
+          temperature: sourceBot.temperature || 0.7,
+          maxTokens: sourceBot.maxTokens || 2000,
+          contextRounds: sourceBot.contextRounds ?? 10,
+          memory: sourceBot.memory || '',
+          memoryEnabled: sourceBot.memoryEnabled ?? false,
           createdAt: Date.now(),
           lastActiveAt: Date.now(),
           isForked: true,

@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 import { 
   Send, Setting, ApplicationMenu, Robot, User, Copy, Delete, 
   RefreshOne, Down, Up, Loading, Caution, Pause, Edit, Fork,
@@ -368,7 +371,8 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
                   <div className="message-bubble">
                     {msg.role === 'assistant' ? (
                       <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
                         components={{
                           code({ node, inline, className, children, ...props }) {
                             if (inline) {

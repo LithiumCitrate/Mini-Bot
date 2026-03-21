@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { Close, Api, Key, Refresh, CheckOne, Loading, Download, Upload, 
-  Connection, Delete, Sun, Moon, Setting
+  Connection, Delete, Sun, Moon, Setting, Search
 } from '@icon-park/react'
 import useStore from '../store/useStore'
 import { fetchModels, testConnection } from '../utils/api'
 import './SettingsModal.css'
 
 function SettingsModal({ onClose }) {
-  const { apiConfig, setApiConfig, setModels, models, theme, setTheme, exportData, importData, clearAllData } = useStore()
+  const { apiConfig, setApiConfig, setModels, models, theme, setTheme, exportData, importData, clearAllData, tavilyConfig, setTavilyConfig } = useStore()
   const [baseUrl, setBaseUrl] = useState(apiConfig.baseUrl || '')
   const [apiKey, setApiKey] = useState(apiConfig.apiKey || '')
+  const [tavilyEnabled, setTavilyEnabled] = useState(tavilyConfig.enabled || false)
+  const [tavilyKey, setTavilyKey] = useState(tavilyConfig.apiKey || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -61,6 +63,7 @@ function SettingsModal({ onClose }) {
 
   const handleSave = () => {
     setApiConfig({ baseUrl, apiKey })
+    setTavilyConfig({ enabled: tavilyEnabled, apiKey: tavilyKey })
     onClose()
   }
   
@@ -227,6 +230,37 @@ function SettingsModal({ onClose }) {
                 <span>跟随系统</span>
               </button>
             </div>
+          </div>
+
+          <div className="setting-section">
+            <h3>
+              <Search theme="outline" size="18" fill="#4a90e2" />
+              网页搜索 (Tavily)
+            </h3>
+            <div className="form-group toggle-group">
+              <label>启用网页搜索</label>
+              <button 
+                className={`toggle-btn ${tavilyEnabled ? 'active' : ''}`}
+                onClick={() => setTavilyEnabled(!tavilyEnabled)}
+              >
+                {tavilyEnabled ? '开启' : '关闭'}
+              </button>
+            </div>
+            {tavilyEnabled && (
+              <div className="form-group">
+                <label>Tavily API Key</label>
+                <input
+                  type="password"
+                  value={tavilyKey}
+                  onChange={(e) => setTavilyKey(e.target.value)}
+                  placeholder="tvly-..."
+                />
+                <span className="hint">
+                  获取 API Key: <a href="https://tavily.com" target="_blank" rel="noopener noreferrer">tavily.com</a>
+                </span>
+              </div>
+            )}
+            <span className="hint">开启后，Bot 可根据需要自动搜索互联网获取最新信息</span>
           </div>
 
           <div className="setting-section">

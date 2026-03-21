@@ -10,7 +10,7 @@ import {
   CheckOne, Close, Bookmark
 } from '@icon-park/react'
 import useStore from '../store/useStore'
-import { sendChatMessage } from '../utils/api'
+import { sendChatMessage, tavilySearch } from '../utils/api'
 import CodeBlock from './CodeBlock'
 import './ChatWindow.css'
 
@@ -38,12 +38,39 @@ function processMemoryToolCalls(toolCalls, currentMemory, onMemoryUpdate) {
   return { updated: false }
 }
 
+// 处理网页搜索工具调用
+async function processWebSearchToolCalls(toolCalls, tavilyApiKey) {
+  const results = []
+  for (const toolCall of toolCalls) {
+    if (toolCall.function.name === 'web_search') {
+      try {
+        const args = JSON.parse(toolCall.function.arguments)
+        const { query, search_depth = 'basic' } = args
+        
+        const searchResult = await tavilySearch(tavilyApiKey, query, search_depth)
+        results.push({
+          toolCallId: toolCall.id,
+          result: searchResult
+        })
+      } catch (e) {
+        console.error('网页搜索失败:', e)
+        results.push({
+          toolCallId: toolCall.id,
+          result: `搜索失败: ${e.message}`
+        })
+      }
+    }
+  }
+  return results
+}
+
 function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   const { 
     apiConfig, models, bots, currentBotId, conversations,
     addMessage, updateLastMessage, clearConversation, deleteMessage, updateBot,
     setAbortController, stopGeneration, abortController,
-    setDraft, getDraft, forkConversation, updateMessage, deleteMessagesFrom
+    setDraft, getDraft, forkConversation, updateMessage, deleteMessagesFrom,
+    tavilyConfig
   } = useStore()
   
   const [input, setInput] = useState('')
@@ -140,7 +167,10 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       const model = currentBot.model || models[0]?.id
       if (!model) throw new Error('请先选择模型')
       
-      // 只有开启记忆功能才启用记忆工具
+      // 判断是否启用网页搜索
+      const enableWebSearch = tavilyConfig.enabled && tavilyConfig.apiKey
+      
+      // 发送消息，启用相应的工具
       const result = await sendChatMessage(
         apiConfig.baseUrl,
         apiConfig.apiKey,
@@ -152,20 +182,74 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
           updateLastMessage(currentBotId, chunk)
         },
         controller.signal,
-        currentBot.memoryEnabled // 只有开启记忆功能才启用记忆工具
+        currentBot.memoryEnabled, // 记忆工具
+        enableWebSearch // 网页搜索工具
       )
       
-      // 处理工具调用（只有开启记忆功能才处理）
-      if (currentBot.memoryEnabled && result?.toolCalls?.length > 0) {
-        const memoryResult = processMemoryToolCalls(
-          result.toolCalls,
-          currentBot.memory,
-          (newMemory) => updateBot(currentBotId, { memory: newMemory })
-        )
+      // 处理工具调用
+      if (result?.toolCalls?.length > 0) {
+        // 处理记忆工具调用
+        if (currentBot.memoryEnabled) {
+          const memoryResult = processMemoryToolCalls(
+            result.toolCalls,
+            currentBot.memory,
+            (newMemory) => updateBot(currentBotId, { memory: newMemory })
+          )
+          
+          if (memoryResult.updated) {
+            updateLastMessage(currentBotId, `\n\n---\n✅ 已${memoryResult.mode === 'replace' ? '更新' : '追加'}长期记忆`)
+          }
+        }
         
-        if (memoryResult.updated) {
-          // 在回复末尾添加记忆更新提示
-          updateLastMessage(currentBotId, `\n\n---\n✅ 已${memoryResult.mode === 'replace' ? '更新' : '追加'}长期记忆`)
+        // 处理网页搜索工具调用
+        if (enableWebSearch) {
+          const searchResults = await processWebSearchToolCalls(result.toolCalls, tavilyConfig.apiKey)
+          
+          if (searchResults.length > 0) {
+            // 添加搜索提示
+            updateLastMessage(currentBotId, '\n\n🔍 正在搜索网页...')
+            
+            // 构建工具结果消息
+            const toolResultsMessages = searchResults.map(sr => ({
+              role: 'tool',
+              tool_call_id: sr.toolCallId,
+              content: sr.result
+            }))
+            
+            // 将助手消息和工具结果添加到消息历史
+            const assistantMessage = {
+              role: 'assistant',
+              content: messages[messages.length - 1]?.content || '',
+              tool_calls: result.toolCalls
+            }
+            
+            // 重新请求模型处理搜索结果
+            const newChatMessages = [
+              { role: 'system', content: currentBot.systemPrompt + (currentBot.memory ? `\n\n[长期记忆]\n${currentBot.memory}` : '') },
+              ...historyMessages.map(m => ({ role: m.role, content: m.content })),
+              { role: 'user', content: userMessage.content },
+              assistantMessage,
+              ...toolResultsMessages
+            ]
+            
+            // 清空当前消息并重新生成
+            updateLastMessage(currentBotId, '')
+            
+            await sendChatMessage(
+              apiConfig.baseUrl,
+              apiConfig.apiKey,
+              newChatMessages,
+              model,
+              currentBot.temperature,
+              currentBot.maxTokens,
+              (chunk) => {
+                updateLastMessage(currentBotId, chunk)
+              },
+              controller.signal,
+              false, // 第二次请求不需要记忆工具
+              false  // 第二次请求不需要搜索工具
+            )
+          }
         }
       }
     } catch (error) {

@@ -27,6 +27,12 @@ const useStore = create(
       // 主题设置
       theme: 'system', // 'light' | 'dark' | 'system'
       
+      // Tavily 网页搜索配置
+      tavilyConfig: {
+        enabled: false,
+        apiKey: '',
+      },
+      
       // 设置 API 配置
       setApiConfig: (config) => set({ apiConfig: config }),
       
@@ -197,6 +203,9 @@ const useStore = create(
       // 主题管理
       setTheme: (theme) => set({ theme }),
       
+      // Tavily 配置管理
+      setTavilyConfig: (config) => set({ tavilyConfig: config }),
+      
       // 分支对话：从指定消息创建新会话
       forkConversation: (fromBotId, fromIndex, newBotName) => {
         const state = get()
@@ -239,7 +248,8 @@ const useStore = create(
           apiConfig: state.apiConfig,
           bots: state.bots,
           conversations: state.conversations,
-          theme: state.theme
+          theme: state.theme,
+          tavilyConfig: state.tavilyConfig
         }
       },
       
@@ -249,7 +259,8 @@ const useStore = create(
           apiConfig: data.apiConfig || { baseUrl: '', apiKey: '' },
           bots: data.bots || [],
           conversations: data.conversations || {},
-          theme: data.theme || 'system'
+          theme: data.theme || 'system',
+          tavilyConfig: data.tavilyConfig || { enabled: false, apiKey: '' }
         })
       },
       
@@ -262,7 +273,8 @@ const useStore = create(
           conversations: {},
           drafts: {},
           models: [],
-          theme: 'system'
+          theme: 'system',
+          tavilyConfig: { enabled: false, apiKey: '' }
         })
       }
     }),

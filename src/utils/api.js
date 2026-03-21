@@ -26,6 +26,40 @@ export const memoryTools = [
   }
 ]
 
+// 定义 web_search 工具 (Tavily)
+export const webSearchTools = [
+  {
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description: '在互联网上搜索最新信息。当用户询问时事新闻、最新数据、或你需要获取实时信息时使用此工具。',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: '搜索关键词或问题'
+          },
+          search_depth: {
+            type: 'string',
+            enum: ['basic', 'advanced'],
+            description: '搜索深度：basic 快速搜索，advanced 深度搜索（默认 basic）'
+          }
+        },
+        required: ['query']
+      }
+    }
+  }
+]
+
+// 合并所有工具
+export const getAllTools = (enableMemory, enableWebSearch) => {
+  const tools = []
+  if (enableMemory) tools.push(...memoryTools)
+  if (enableWebSearch) tools.push(...webSearchTools)
+  return tools
+}
+
 // 友好错误消息映射
 const errorMessages = {
   400: '请求格式错误，请检查参数设置',
@@ -123,7 +157,7 @@ export async function fetchModels(baseUrl, apiKey) {
 }
 
 // 发送聊天消息（流式）
-export async function sendChatMessage(baseUrl, apiKey, messages, model, temperature = 0.7, maxTokens = 2000, onChunk, signal, enableMemoryTools = false) {
+export async function sendChatMessage(baseUrl, apiKey, messages, model, temperature = 0.7, maxTokens = 2000, onChunk, signal, enableMemoryTools = false, enableWebSearch = false) {
   const url = `${baseUrl}/chat/completions`
   
   const requestBody = {
@@ -134,9 +168,10 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
     stream: true
   }
   
-  // 如果启用记忆工具，添加 tools 参数
-  if (enableMemoryTools) {
-    requestBody.tools = memoryTools
+  // 添加工具
+  const tools = getAllTools(enableMemoryTools, enableWebSearch)
+  if (tools.length > 0) {
+    requestBody.tools = tools
     requestBody.tool_choice = 'auto'
   }
   
@@ -225,4 +260,45 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
     }
     throw error
   }
+}
+
+// Tavily 网页搜索
+export async function tavilySearch(apiKey, query, searchDepth = 'basic') {
+  const url = 'https://api.tavily.com/search'
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      query,
+      search_depth: searchDepth,
+      include_answer: true,
+      include_raw_content: false,
+      max_results: 5
+    })
+  })
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Tavily API 错误 (${response.status})`)
+  }
+  
+  const data = await response.json()
+  
+  // 格式化搜索结果
+  let result = ''
+  if (data.answer) {
+    result += `**摘要:** ${data.answer}\n\n`
+  }
+  if (data.results && data.results.length > 0) {
+    result += '**搜索结果:**\n'
+    data.results.forEach((item, index) => {
+      result += `${index + 1}. [${item.title}](${item.url})\n   ${item.content}\n\n`
+    })
+  }
+  
+  return result
 }

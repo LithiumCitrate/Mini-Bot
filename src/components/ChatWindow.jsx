@@ -11,6 +11,30 @@ import { sendChatMessage } from '../utils/api'
 import CodeBlock from './CodeBlock'
 import './ChatWindow.css'
 
+// 处理记忆工具调用
+function processMemoryToolCalls(toolCalls, currentMemory, onMemoryUpdate) {
+  for (const toolCall of toolCalls) {
+    if (toolCall.function.name === 'save_memory') {
+      try {
+        const args = JSON.parse(toolCall.function.arguments)
+        const { content, mode } = args
+        
+        if (mode === 'replace') {
+          onMemoryUpdate(content)
+          return { updated: true, mode: 'replace' }
+        } else if (mode === 'append') {
+          const newMemory = currentMemory ? `${currentMemory}\n${content}` : content
+          onMemoryUpdate(newMemory)
+          return { updated: true, mode: 'append' }
+        }
+      } catch (e) {
+        console.error('解析记忆工具参数失败:', e)
+      }
+    }
+  }
+  return { updated: false }
+}
+
 function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   const { 
     apiConfig, models, bots, currentBotId, conversations,
@@ -112,7 +136,8 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       const model = currentBot.model || models[0]?.id
       if (!model) throw new Error('请先选择模型')
       
-      await sendChatMessage(
+      // 启用记忆工具
+      const result = await sendChatMessage(
         apiConfig.baseUrl,
         apiConfig.apiKey,
         chatMessages,
@@ -122,8 +147,23 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
         (chunk) => {
           updateLastMessage(currentBotId, chunk)
         },
-        controller.signal
+        controller.signal,
+        true // enableMemoryTools
       )
+      
+      // 处理工具调用
+      if (result?.toolCalls?.length > 0) {
+        const memoryResult = processMemoryToolCalls(
+          result.toolCalls,
+          currentBot.memory,
+          (newMemory) => updateBot(currentBotId, { memory: newMemory })
+        )
+        
+        if (memoryResult.updated) {
+          // 在回复末尾添加记忆更新提示
+          updateLastMessage(currentBotId, `\n\n---\n✅ 已${memoryResult.mode === 'replace' ? '更新' : '追加'}长期记忆`)
+        }
+      }
     } catch (error) {
       if (error.message !== '生成已停止') {
         updateLastMessage(currentBotId, `❌ ${error.message}`)

@@ -1,5 +1,31 @@
 // API 工具函数
 
+// 定义 save_memory 工具
+export const memoryTools = [
+  {
+    type: 'function',
+    function: {
+      name: 'save_memory',
+      description: '保存重要信息到长期记忆中。用于记录用户的偏好、重要事实、约定事项等需要持久记住的内容。',
+      parameters: {
+        type: 'object',
+        properties: {
+          content: {
+            type: 'string',
+            description: '要保存的记忆内容，应简洁明了'
+          },
+          mode: {
+            type: 'string',
+            enum: ['append', 'replace'],
+            description: 'append: 追加到现有记忆末尾; replace: 替换全部记忆'
+          }
+        },
+        required: ['content', 'mode']
+      }
+    }
+  }
+]
+
 // 友好错误消息映射
 const errorMessages = {
   400: '请求格式错误，请检查参数设置',
@@ -97,8 +123,22 @@ export async function fetchModels(baseUrl, apiKey) {
 }
 
 // 发送聊天消息（流式）
-export async function sendChatMessage(baseUrl, apiKey, messages, model, temperature = 0.7, maxTokens = 2000, onChunk, signal) {
+export async function sendChatMessage(baseUrl, apiKey, messages, model, temperature = 0.7, maxTokens = 2000, onChunk, signal, enableMemoryTools = false) {
   const url = `${baseUrl}/chat/completions`
+  
+  const requestBody = {
+    model,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+    stream: true
+  }
+  
+  // 如果启用记忆工具，添加 tools 参数
+  if (enableMemoryTools) {
+    requestBody.tools = memoryTools
+    requestBody.tool_choice = 'auto'
+  }
   
   const response = await fetch(url, {
     method: 'POST',
@@ -106,13 +146,7 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
-      stream: true
-    }),
+    body: JSON.stringify(requestBody),
     signal
   }).catch(error => {
     if (error.name === 'AbortError') {
@@ -128,6 +162,7 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
+  let toolCalls = [] // 收集工具调用
   
   try {
     while (true) {
@@ -146,9 +181,34 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
         if (trimmed.startsWith('data: ')) {
           try {
             const json = JSON.parse(trimmed.slice(6))
-            const content = json.choices?.[0]?.delta?.content
-            if (content) {
-              onChunk(content)
+            const delta = json.choices?.[0]?.delta
+            
+            // 处理内容
+            if (delta?.content) {
+              onChunk(delta.content)
+            }
+            
+            // 处理工具调用
+            if (delta?.tool_calls) {
+              for (const toolCallDelta of delta.tool_calls) {
+                const index = toolCallDelta.index
+                if (!toolCalls[index]) {
+                  toolCalls[index] = {
+                    id: toolCallDelta.id || '',
+                    type: 'function',
+                    function: { name: '', arguments: '' }
+                  }
+                }
+                if (toolCallDelta.id) {
+                  toolCalls[index].id = toolCallDelta.id
+                }
+                if (toolCallDelta.function?.name) {
+                  toolCalls[index].function.name = toolCallDelta.function.name
+                }
+                if (toolCallDelta.function?.arguments) {
+                  toolCalls[index].function.arguments += toolCallDelta.function.arguments
+                }
+              }
             }
           } catch (e) {
             console.error('解析 SSE 数据失败:', e)
@@ -156,6 +216,9 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
         }
       }
     }
+    
+    // 返回工具调用（如果有）
+    return { toolCalls: toolCalls.filter(tc => tc.id) }
   } catch (error) {
     if (error.name === 'AbortError') {
       throw new Error('生成已停止')

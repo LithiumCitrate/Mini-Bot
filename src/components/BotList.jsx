@@ -144,7 +144,8 @@ function BotList({ onSettingsClick, onMobileClose }) {
     const messages = conversations[botId] || []
     if (messages.length === 0) return '暂无消息'
     const lastMsg = messages[messages.length - 1]
-    return lastMsg.content.slice(0, 30) + (lastMsg.content.length > 30 ? '...' : '')
+    const content = lastMsg.content || ''
+    return content.slice(0, 30) + (content.length > 30 ? '...' : '')
   }
 
   return (

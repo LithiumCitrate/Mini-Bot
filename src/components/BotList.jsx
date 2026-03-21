@@ -56,7 +56,7 @@ const BOT_TEMPLATES = [
 ]
 
 function BotList({ onSettingsClick, onMobileClose }) {
-  const { bots, currentBotId, createBot, setCurrentBot, deleteBot, conversations, models, apiConfig } = useStore()
+  const { bots, currentBotId, createBot, setCurrentBot, deleteBot, updateBot, conversations, models, apiConfig } = useStore()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newBotName, setNewBotName] = useState('')
   const [newBotPrompt, setNewBotPrompt] = useState('')
@@ -123,7 +123,6 @@ function BotList({ onSettingsClick, onMobileClose }) {
     e.stopPropagation()
     const bot = bots.find(b => b.id === botId)
     if (bot) {
-      const { updateBot } = useStore.getState()
       updateBot(botId, { pinned: !bot.pinned })
     }
   }

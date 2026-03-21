@@ -313,10 +313,11 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             }
             
             // 重新请求模型处理搜索结果
+            // 注意：保留原始用户消息格式（可能包含图片）
             const newChatMessages = [
               { role: 'system', content: currentBot.systemPrompt + (currentBot.memory ? `\n\n[长期记忆]\n${currentBot.memory}` : '') },
               ...formattedHistory,
-              { role: 'user', content: messageContent },
+              currentUserMsg,
               assistantMessage,
               ...toolResultsMessages
             ]

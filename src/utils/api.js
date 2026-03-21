@@ -32,7 +32,7 @@ export const webSearchTools = [
     type: 'function',
     function: {
       name: 'web_search',
-      description: '在互联网上搜索最新信息。当用户询问时事新闻、最新数据、或你需要获取实时信息时使用此工具。',
+      description: '在互联网上搜索最新信息。当用户询问时事新闻、最新数据、或你需要获取实时信息时使用此工具。搜索结果可能包含相关图片，你可以在回复中使用 Markdown 图片语法展示给用户。',
       parameters: {
         type: 'object',
         properties: {
@@ -277,7 +277,9 @@ export async function tavilySearch(apiKey, query, searchDepth = 'basic') {
       search_depth: searchDepth,
       include_answer: true,
       include_raw_content: false,
-      max_results: 5
+      max_results: 5,
+      include_images: true,
+      include_image_descriptions: true
     })
   })
   
@@ -297,6 +299,18 @@ export async function tavilySearch(apiKey, query, searchDepth = 'basic') {
     result += '**搜索结果:**\n'
     data.results.forEach((item, index) => {
       result += `${index + 1}. [${item.title}](${item.url})\n   ${item.content}\n\n`
+    })
+  }
+  
+  // 添加图片结果
+  if (data.images && data.images.length > 0) {
+    result += '**相关图片:**\n\n'
+    data.images.forEach((image, index) => {
+      if (image.description) {
+        result += `![${image.description}](${image.url})\n\n`
+      } else {
+        result += `![图片${index + 1}](${image.url})\n\n`
+      }
     })
   }
   

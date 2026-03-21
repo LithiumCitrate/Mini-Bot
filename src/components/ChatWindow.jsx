@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 import { 
   Send, Setting, ApplicationMenu, Robot, User, Copy, Delete, 
   RefreshOne, Down, Up, Loading, Caution, Pause, Edit, Fork,
-  CheckOne, Close
+  CheckOne, Close, Bookmark
 } from '@icon-park/react'
 import useStore from '../store/useStore'
 import { sendChatMessage } from '../utils/api'
@@ -50,6 +50,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   const [editContent, setEditContent] = useState('')
   const [showForkModal, setShowForkModal] = useState(null)
   const [forkName, setForkName] = useState('')
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   
@@ -136,7 +137,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       const model = currentBot.model || models[0]?.id
       if (!model) throw new Error('请先选择模型')
       
-      // 启用记忆工具
+      // 只有开启记忆功能才启用记忆工具
       const result = await sendChatMessage(
         apiConfig.baseUrl,
         apiConfig.apiKey,
@@ -148,11 +149,11 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
           updateLastMessage(currentBotId, chunk)
         },
         controller.signal,
-        true // enableMemoryTools
+        currentBot.memoryEnabled // 只有开启记忆功能才启用记忆工具
       )
       
-      // 处理工具调用
-      if (result?.toolCalls?.length > 0) {
+      // 处理工具调用（只有开启记忆功能才处理）
+      if (currentBot.memoryEnabled && result?.toolCalls?.length > 0) {
         const memoryResult = processMemoryToolCalls(
           result.toolCalls,
           currentBot.memory,
@@ -316,6 +317,22 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
         </button>
       </div>
       
+      {/* Memory Panel - only show when memoryEnabled */}
+      {currentBot.memoryEnabled && showMemoryPanel && (
+        <div className="memory-panel">
+          <div className="memory-panel-header">
+            <Bookmark theme="outline" size="16" fill="#4a90e2" />
+            <span>长期记忆</span>
+            <button className="memory-close-btn" onClick={() => setShowMemoryPanel(false)}>
+              <Close theme="outline" size="14" fill="#666" />
+            </button>
+          </div>
+          <div className="memory-content">
+            {currentBot.memory || '暂无记忆内容。Bot 会在对话中自动记录重要信息。'}
+          </div>
+        </div>
+      )}
+      
       {/* Messages */}
       <div className="chat-messages">
         {messages.length === 0 ? (
@@ -439,6 +456,16 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       
       {/* Input */}
       <div className="chat-input-area">
+        {/* Memory toggle button - only show when memoryEnabled */}
+        {currentBot.memoryEnabled && (
+          <button 
+            className={`memory-toggle-btn ${showMemoryPanel ? 'active' : ''}`}
+            onClick={() => setShowMemoryPanel(!showMemoryPanel)}
+            title="查看记忆"
+          >
+            <Bookmark theme="outline" size="16" fill={showMemoryPanel ? '#4a90e2' : '#999'} />
+          </button>
+        )}
         <div className="input-container">
           <textarea
             ref={inputRef}

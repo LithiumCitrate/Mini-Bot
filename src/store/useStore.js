@@ -45,6 +45,7 @@ const useStore = create(
           maxTokens: bot.maxTokens || 2000,
           contextRounds: bot.contextRounds ?? 10, // 上下文轮数，0表示不限制
           memory: bot.memory || '', // 长期记忆字段
+          memoryEnabled: bot.memoryEnabled ?? false, // 记忆功能开关，默认关闭
           createdAt: Date.now(),
           lastActiveAt: Date.now(), // 最近活动时间
         }
@@ -212,6 +213,8 @@ const useStore = create(
           temperature: sourceBot?.temperature || 0.7,
           maxTokens: sourceBot?.maxTokens || 2000,
           contextRounds: sourceBot?.contextRounds ?? 10,
+          memory: sourceBot?.memory || '',
+          memoryEnabled: sourceBot?.memoryEnabled ?? false,
           createdAt: Date.now(),
           lastActiveAt: Date.now(),
           isForked: true,

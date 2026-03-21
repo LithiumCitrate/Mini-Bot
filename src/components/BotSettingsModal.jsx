@@ -12,6 +12,7 @@ function BotSettingsModal({ bot, onClose }) {
   const [maxTokens, setMaxTokens] = useState(bot.maxTokens)
   const [contextRounds, setContextRounds] = useState(bot.contextRounds ?? 10)
   const [memory, setMemory] = useState(bot.memory || '')
+  const [memoryEnabled, setMemoryEnabled] = useState(bot.memoryEnabled ?? false)
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0]
@@ -32,7 +33,8 @@ function BotSettingsModal({ bot, onClose }) {
       temperature,
       maxTokens,
       contextRounds,
-      memory
+      memory,
+      memoryEnabled
     })
     onClose()
   }
@@ -164,20 +166,42 @@ function BotSettingsModal({ bot, onClose }) {
             <span className="hint">限制对话历史记忆轮数，避免 token 超限</span>
           </div>
           
-          {/* Long-term Memory */}
+          {/* Memory Enable Toggle */}
           <div className="form-group">
-            <label>
+            <label className="toggle-label">
               <Bookmark theme="outline" size="16" fill="#4a90e2" />
-              长期记忆
+              记忆功能
             </label>
-            <textarea
-              value={memory}
-              onChange={(e) => setMemory(e.target.value)}
-              placeholder="用户昵称、偏好、常做任务、语气要求...这部分内容会始终跟随对话发送"
-              rows={3}
-            />
-            <span className="hint">这部分记忆会始终包含在每次对话中，适合存储用户偏好、重要信息等</span>
+            <div className="toggle-container">
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={memoryEnabled}
+                  onChange={(e) => setMemoryEnabled(e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+              <span className="toggle-text">{memoryEnabled ? '已开启' : '已关闭'}</span>
+            </div>
+            <span className="hint">开启后，Bot 可在对话中自动写入长期记忆，并显示记忆面板</span>
           </div>
+          
+          {/* Long-term Memory - only show when memoryEnabled */}
+          {memoryEnabled && (
+            <div className="form-group">
+              <label>
+                <Bookmark theme="outline" size="16" fill="#4a90e2" />
+                长期记忆内容
+              </label>
+              <textarea
+                value={memory}
+                onChange={(e) => setMemory(e.target.value)}
+                placeholder="用户昵称、偏好、常做任务、语气要求...这部分内容会始终跟随对话发送"
+                rows={3}
+              />
+              <span className="hint">Bot 会在对话中自动追加重要信息，你也可以手动编辑</span>
+            </div>
+          )}
         </div>
 
         <div className="modal-footer">

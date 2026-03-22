@@ -9,9 +9,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "set NODE_ENV=development && electron .",
-    "electron:build": "vite build && electron-builder --win --x64"
+    "electron:build": "vite build && electron-builder --win --x64",
+    "android:build": "vite build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:run": "vite build && npx cap sync android && npx cap run android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "@icon-park/react": "^1.4.2",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-scroll-area": "^1.2.10",

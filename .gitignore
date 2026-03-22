@@ -28,3 +28,19 @@ npm-debug.log*
 # Cache
 .cache/
 .parcel-cache/
+
+# Android/Capacitor
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/capacitor-cordova-android-plugins/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+
+# Electron
+electron-builder.yml

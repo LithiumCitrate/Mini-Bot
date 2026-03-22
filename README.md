@@ -26,7 +26,7 @@
 - **数据备份**：导出/导入 JSON 备份文件，轻松迁移数据
 - **本地存储**：所有数据仅存储在本地，保护隐私安全
 - **响应式设计**：支持桌面端和移动端
-- **跨平台打包**：支持 Electron 打包为 Windows 桌面应用
+- **跨平台打包**：支持 Electron 打包为 Windows 桌面应用，Capacitor 打包为 Android 应用
 
 ## 技术栈
 
@@ -37,6 +37,7 @@
 - **KaTeX** - 数学公式渲染
 - **Icon Park** - 图标库
 - **Electron** - 桌面应用打包
+- **Capacitor** - 移动应用打包
 
 ## 快速开始
 
@@ -130,6 +131,24 @@ npm run electron:dev
 # 构建生产版本并打包
 npm run electron:build
 ```
+
+### Android 应用
+
+使用 Capacitor 打包为 Android 应用：
+
+```bash
+# 构建 web 资源
+npm run build
+
+# 同步到 Android
+npx cap sync android
+
+# 构建 APK（在 android 目录下）
+cd android
+./gradlew assembleDebug
+```
+
+APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## 数据管理
 

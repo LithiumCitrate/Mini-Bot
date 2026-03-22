@@ -24,6 +24,21 @@ function App() {
     
     return () => mediaQuery.removeEventListener('change', applyTheme)
   }, [theme])
+
+  useEffect(() => {
+    const setAppHeight = () => {
+      document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`)
+    }
+
+    setAppHeight()
+    window.addEventListener('resize', setAppHeight)
+    window.addEventListener('orientationchange', setAppHeight)
+
+    return () => {
+      window.removeEventListener('resize', setAppHeight)
+      window.removeEventListener('orientationchange', setAppHeight)
+    }
+  }, [])
   
   return (
     <div className="app">

@@ -1,5 +1,7 @@
 .main-layout {
   display: flex;
+  height: var(--app-height, 100dvh);
+  height: 100dvh;
   height: 100vh;
   width: 100%;
   overflow: hidden;
@@ -40,6 +42,20 @@
 
   .main-layout {
     position: relative;
+  }
+
+  .main-layout.mobile-botlist-only .chat-panel {
+    display: none;
+  }
+
+  .main-layout.mobile-botlist-only .bot-list-panel {
+    position: relative;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    z-index: 1;
+    transition: none;
   }
 
   .bot-list-panel {

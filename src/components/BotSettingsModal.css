@@ -225,7 +225,7 @@
 }
 
 /* Footer */
-.modal-footer {
+.bot-settings-modal .modal-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -233,7 +233,7 @@
   border-top: 1px solid var(--border-color);
 }
 
-.delete-btn {
+.bot-settings-modal .delete-btn {
   padding: 10px 16px;
   background: none;
   border: 1px solid #ff4d4f;
@@ -244,17 +244,17 @@
   transition: all 0.2s;
 }
 
-.delete-btn:hover {
+.bot-settings-modal .delete-btn:hover {
   background: #ff4d4f;
   color: #fff;
 }
 
-.footer-right {
+.bot-settings-modal .footer-right {
   display: flex;
   gap: 12px;
 }
 
-.cancel-btn, .save-btn {
+.bot-settings-modal .cancel-btn, .bot-settings-modal .save-btn {
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
@@ -263,21 +263,21 @@
   transition: background 0.2s;
 }
 
-.cancel-btn {
+.bot-settings-modal .cancel-btn {
   background: var(--bg-secondary);
   color: var(--text-secondary);
 }
 
-.cancel-btn:hover {
+.bot-settings-modal .cancel-btn:hover {
   background: var(--bg-tertiary);
 }
 
-.save-btn {
+.bot-settings-modal .save-btn {
   background: var(--accent-color);
   color: #fff;
 }
 
-.save-btn:hover {
+.bot-settings-modal .save-btn:hover {
   background: var(--accent-hover);
 }
 
@@ -299,23 +299,23 @@
     padding: 20px;
   }
 
-  .modal-footer {
+  .bot-settings-modal .modal-footer {
     flex-direction: column;
     gap: 12px;
     padding: 16px 20px;
   }
 
-  .delete-btn {
+  .bot-settings-modal .delete-btn {
     width: 100%;
     order: 2;
   }
 
-  .footer-right {
+  .bot-settings-modal .footer-right {
     width: 100%;
     flex-direction: row;
   }
 
-  .cancel-btn, .save-btn {
+  .bot-settings-modal .cancel-btn, .bot-settings-modal .save-btn {
     flex: 1;
   }
 }

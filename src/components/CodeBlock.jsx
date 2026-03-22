@@ -15,7 +15,7 @@ function CodeBlock({ children, className }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      // 复制失败，静默处理
     }
   }
   

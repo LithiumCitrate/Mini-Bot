@@ -31,7 +31,7 @@ function processMemoryToolCalls(toolCalls, currentMemory, onMemoryUpdate) {
           return { updated: true, mode: 'append' }
         }
       } catch (e) {
-        console.error('解析记忆工具参数失败:', e)
+        // 解析失败，静默处理
       }
     }
   }
@@ -53,7 +53,6 @@ async function processWebSearchToolCalls(toolCalls, tavilyApiKey) {
           result: searchResult
         })
       } catch (e) {
-        console.error('网页搜索失败:', e)
         results.push({
           toolCallId: toolCall.id,
           result: `搜索失败: ${e.message}`

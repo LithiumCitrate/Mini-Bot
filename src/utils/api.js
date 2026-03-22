@@ -337,7 +337,7 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
               }
             }
           } catch (e) {
-            console.error('解析 SSE 数据失败:', e)
+            // 解析失败，跳过此条数据
           }
         }
       }

@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useState, ChangeEvent } from 'react'
 import { Close, Api, Refresh, CheckOne, Loading, Download, Upload, 
   Connection, Delete, Sun, Moon, Setting, Search
 } from '@icon-park/react'
 import useStore from '../store/useStore'
-import { fetchModels, testConnection } from '../utils/api'
+import { fetchModels, testConnection, TestConnectionResult } from '../utils/api'
 import './SettingsModal.css'
 
-function SettingsModal({ onClose }) {
+interface SettingsModalProps {
+  onClose: () => void
+}
+
+function SettingsModal({ onClose }: SettingsModalProps) {
   const { apiConfig, setApiConfig, setModels, models, theme, setTheme, exportData, importData, clearAllData, tavilyConfig, setTavilyConfig } = useStore()
   const [baseUrl, setBaseUrl] = useState(apiConfig.baseUrl || '')
   const [apiKey, setApiKey] = useState(apiConfig.apiKey || '')
@@ -15,7 +19,7 @@ function SettingsModal({ onClose }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [connectionTest, setConnectionTest] = useState(null)
+  const [connectionTest, setConnectionTest] = useState<TestConnectionResult | null>(null)
   const [testing, setTesting] = useState(false)
 
   const handleRefreshModels = async () => {
@@ -36,7 +40,7 @@ function SettingsModal({ onClose }) {
       setSuccess('模型列表已更新')
       setTimeout(() => setSuccess(''), 2000)
     } catch (err) {
-      setError(err.message || '获取模型列表失败')
+      setError((err as Error).message || '获取模型列表失败')
     } finally {
       setLoading(false)
     }
@@ -55,7 +59,7 @@ function SettingsModal({ onClose }) {
       const result = await testConnection(baseUrl, apiKey)
       setConnectionTest(result)
     } catch (err) {
-      setConnectionTest({ success: false, error: err.message })
+      setConnectionTest({ success: false, error: (err as Error).message, responseTime: 0 })
     } finally {
       setTesting(false)
     }
@@ -80,20 +84,20 @@ function SettingsModal({ onClose }) {
     setTimeout(() => setSuccess(''), 2000)
   }
   
-  const handleImport = (e) => {
-    const file = e.target.files[0]
+  const handleImport = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (!file) return
     
     const reader = new FileReader()
     reader.onload = (event) => {
       try {
-        const data = JSON.parse(event.target.result)
+        const data = JSON.parse(event.target?.result as string)
         if (confirm('导入将覆盖当前所有数据，确定继续？')) {
           importData(data)
           setSuccess('数据已导入，页面将刷新')
           setTimeout(() => window.location.reload(), 1000)
         }
-      } catch (err) {
+      } catch {
         setError('导入失败：文件格式错误')
       }
     }

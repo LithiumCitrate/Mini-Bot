@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, ChangeEvent } from 'react'
 import { Add, Setting, Delete, Robot, Message, Text, Caution, ImageFiles, Bookmark, Search, Pin } from '@icon-park/react'
 import useStore from '../store/useStore'
 import './BotList.css'
@@ -55,7 +55,12 @@ const BOT_TEMPLATES = [
   }
 ]
 
-function BotList({ onSettingsClick, onMobileClose }) {
+interface BotListProps {
+  onSettingsClick: () => void
+  onMobileClose?: () => void
+}
+
+function BotList({ onSettingsClick, onMobileClose }: BotListProps) {
   const { bots, currentBotId, createBot, setCurrentBot, deleteBot, updateBot, conversations, models, apiConfig } = useStore()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newBotName, setNewBotName] = useState('')
@@ -79,12 +84,12 @@ function BotList({ onSettingsClick, onMobileClose }) {
     return bot.name.toLowerCase().includes(searchQuery.toLowerCase())
   })
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0]
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setNewBotAvatar(reader.result)
+        setNewBotAvatar(reader.result as string)
       }
       reader.readAsDataURL(file)
     }
@@ -112,14 +117,14 @@ function BotList({ onSettingsClick, onMobileClose }) {
     setNewBotTemperature(0.7)
   }
   
-  const handleSelectTemplate = (template) => {
+  const handleSelectTemplate = (template: typeof BOT_TEMPLATES[0]) => {
     setNewBotName(template.name)
     setNewBotPrompt(template.systemPrompt)
     setNewBotTemperature(template.temperature)
     setShowTemplates(false)
   }
   
-  const handleTogglePin = (e, botId) => {
+  const handleTogglePin = (e: React.MouseEvent, botId: string) => {
     e.stopPropagation()
     const bot = bots.find(b => b.id === botId)
     if (bot) {
@@ -127,19 +132,19 @@ function BotList({ onSettingsClick, onMobileClose }) {
     }
   }
 
-  const handleSelectBot = (botId) => {
+  const handleSelectBot = (botId: string) => {
     setCurrentBot(botId)
     onMobileClose?.()
   }
 
-  const handleDeleteBot = (e, botId) => {
+  const handleDeleteBot = (e: React.MouseEvent, botId: string) => {
     e.stopPropagation()
     if (confirm('确定要删除这个 Bot 吗？')) {
       deleteBot(botId)
     }
   }
 
-  const getLastMessage = (botId) => {
+  const getLastMessage = (botId: string) => {
     const messages = conversations[botId] || []
     if (messages.length === 0) return '暂无消息'
     const lastMsg = messages[messages.length - 1]

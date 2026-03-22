@@ -1,7 +1,108 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-const useStore = create(
+// Type definitions
+export interface ApiConfig {
+  baseUrl: string
+  apiKey: string
+}
+
+export interface TavilyConfig {
+  enabled: boolean
+  apiKey: string
+}
+
+export interface Bot {
+  id: string
+  name: string
+  avatar: string
+  systemPrompt: string
+  model: string
+  temperature: number
+  maxTokens: number
+  contextRounds: number
+  memory: string
+  memoryEnabled: boolean
+  createdAt: number
+  lastActiveAt: number
+  isForked?: boolean
+  forkedFrom?: string
+  pinned?: boolean
+}
+
+export interface Message {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  timestamp?: number
+}
+
+export interface StoreState {
+  // API 配置
+  apiConfig: ApiConfig
+  models: Model[]
+  
+  // Bot 列表
+  bots: Bot[]
+  currentBotId: string | null
+  
+  // 聊天记录 { botId: [messages] }
+  conversations: Record<string, Message[]>
+  
+  // 草稿 { botId: draftText }
+  drafts: Record<string, string>
+  
+  // AbortController 用于停止生成
+  abortController: AbortController | null
+  
+  // 主题设置
+  theme: 'light' | 'dark' | 'system'
+  
+  // Tavily 网页搜索配置
+  tavilyConfig: TavilyConfig
+  
+  // Actions
+  setApiConfig: (config: ApiConfig) => void
+  setModels: (models: Model[]) => void
+  createBot: (bot: Partial<Bot>) => string
+  updateBot: (botId: string, updates: Partial<Bot>) => void
+  deleteBot: (botId: string) => void
+  setCurrentBot: (botId: string | null) => void
+  addMessage: (botId: string, message: Message) => void
+  updateLastMessage: (botId: string, content: string) => void
+  clearConversation: (botId: string) => void
+  deleteMessage: (botId: string, messageIndex: number) => void
+  updateMessage: (botId: string, messageIndex: number, newContent: string) => void
+  deleteMessagesFrom: (botId: string, fromIndex: number) => void
+  setAbortController: (controller: AbortController | null) => void
+  stopGeneration: () => void
+  setDraft: (botId: string, text: string) => void
+  getDraft: (botId: string) => string
+  setTheme: (theme: 'light' | 'dark' | 'system') => void
+  setTavilyConfig: (config: TavilyConfig) => void
+  forkConversation: (fromBotId: string, fromIndex: number, newBotName?: string) => string | null
+  exportData: () => ExportData
+  importData: (data: Partial<ExportData>) => void
+  clearAllData: () => void
+}
+
+export interface Model {
+  id: string
+  name?: string
+  isMultimodal: boolean
+  [key: string]: unknown
+}
+
+export interface ExportData {
+  version: string
+  exportedAt: string
+  apiConfig: ApiConfig
+  bots: Bot[]
+  conversations: Record<string, Message[]>
+  theme: 'light' | 'dark' | 'system'
+  tavilyConfig: TavilyConfig
+}
+
+const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
       // API 配置
@@ -25,7 +126,7 @@ const useStore = create(
       abortController: null,
       
       // 主题设置
-      theme: 'system', // 'light' | 'dark' | 'system'
+      theme: 'system',
       
       // Tavily 网页搜索配置
       tavilyConfig: {
@@ -41,7 +142,7 @@ const useStore = create(
       
       // 创建新 Bot
       createBot: (bot) => {
-        const newBot = {
+        const newBot: Bot = {
           id: Date.now().toString(),
           name: bot.name || '新助手',
           avatar: bot.avatar || '',
@@ -49,11 +150,11 @@ const useStore = create(
           model: bot.model || '',
           temperature: bot.temperature || 0.7,
           maxTokens: bot.maxTokens || 2000,
-          contextRounds: bot.contextRounds ?? 10, // 上下文轮数，0表示不限制
-          memory: bot.memory || '', // 长期记忆字段
-          memoryEnabled: bot.memoryEnabled ?? false, // 记忆功能开关，默认关闭
+          contextRounds: bot.contextRounds ?? 10,
+          memory: bot.memory || '',
+          memoryEnabled: bot.memoryEnabled ?? false,
           createdAt: Date.now(),
-          lastActiveAt: Date.now(), // 最近活动时间
+          lastActiveAt: Date.now(),
         }
         set((state) => ({
           bots: [...state.bots, newBot],
@@ -225,7 +326,7 @@ const useStore = create(
         
         const forkedMessages = messages.slice(0, fromIndex + 1)
         
-        const newBot = {
+        const newBot: Bot = {
           id: Date.now().toString(),
           name: newBotName || `${sourceBot.name} (分支)`,
           avatar: sourceBot.avatar || '',
@@ -293,7 +394,7 @@ const useStore = create(
     {
       name: 'mini-bot-storage',
       version: 1,
-      migrate: (persistedState, version) => {
+      migrate: (persistedState) => {
         // 迁移旧版本数据
         return persistedState
       }

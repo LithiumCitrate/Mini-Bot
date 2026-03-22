@@ -4,7 +4,11 @@ import useStore from '../store/useStore'
 import { fetchModels } from '../utils/api'
 import './WelcomePage.css'
 
-function WelcomePage({ onConfigured }) {
+interface WelcomePageProps {
+  onConfigured: () => void
+}
+
+function WelcomePage({ onConfigured }: WelcomePageProps) {
   const { setApiConfig, setModels } = useStore()
   const [baseUrl, setBaseUrl] = useState('https://api.openai.com/v1')
   const [apiKey, setApiKey] = useState('')
@@ -26,7 +30,7 @@ function WelcomePage({ onConfigured }) {
       setModels(models)
       onConfigured()
     } catch (err) {
-      setError(err.message || '连接失败，请检查配置')
+      setError((err as Error).message || '连接失败，请检查配置')
     } finally {
       setLoading(false)
     }

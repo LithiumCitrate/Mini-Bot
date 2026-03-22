@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { Copy, CheckOne, Down, Up } from '@icon-park/react'
 
-function CodeBlock({ children, className }) {
+interface CodeBlockProps {
+  children: React.ReactNode
+  className?: string
+}
+
+function CodeBlock({ children, className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   
@@ -14,7 +19,7 @@ function CodeBlock({ children, className }) {
       await navigator.clipboard.writeText(codeContent)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
+    } catch {
       // 复制失败，静默处理
     }
   }

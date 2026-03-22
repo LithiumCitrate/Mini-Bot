@@ -1,21 +1,35 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { 
-  Send, Setting, ApplicationMenu, Robot, User, Copy, Delete, 
+  Send, Setting, ApplicationMenu, Robot, Copy, Delete, 
   RefreshOne, Down, Loading, Caution, Pause, Edit, Fork,
   CheckOne, Close, Bookmark, Eyes, PictureOne, CloseSmall
 } from '@icon-park/react'
-import useStore from '../store/useStore'
-import { sendChatMessage, tavilySearch, isMultimodalModel } from '../utils/api'
-import CodeBlock from './CodeBlock'
+import useStore, { Message } from '../store/useStore'
+import { sendChatMessage, tavilySearch, isMultimodalModel, ToolCall } from '../utils/api'
+import CodeBlock from './CodeBlock.tsx'
 import './ChatWindow.css'
 
+interface PendingImage {
+  id: number
+  data: string
+  name: string
+}
+
+interface ExtendedMessage extends Message {
+  images?: string[]
+}
+
 // 处理记忆工具调用
-function processMemoryToolCalls(toolCalls, currentMemory, onMemoryUpdate) {
+function processMemoryToolCalls(
+  toolCalls: ToolCall[],
+  currentMemory: string,
+  onMemoryUpdate: (memory: string) => void
+): { updated: boolean; mode?: string } {
   for (const toolCall of toolCalls) {
     if (toolCall.function.name === 'save_memory') {
       try {
@@ -30,7 +44,7 @@ function processMemoryToolCalls(toolCalls, currentMemory, onMemoryUpdate) {
           onMemoryUpdate(newMemory)
           return { updated: true, mode: 'append' }
         }
-      } catch (e) {
+      } catch {
         // 解析失败，静默处理
       }
     }
@@ -39,8 +53,11 @@ function processMemoryToolCalls(toolCalls, currentMemory, onMemoryUpdate) {
 }
 
 // 处理网页搜索工具调用
-async function processWebSearchToolCalls(toolCalls, tavilyApiKey) {
-  const results = []
+async function processWebSearchToolCalls(
+  toolCalls: ToolCall[],
+  tavilyApiKey: string
+): Promise<{ toolCallId: string; result: string }[]> {
+  const results: { toolCallId: string; result: string }[] = []
   for (const toolCall of toolCalls) {
     if (toolCall.function.name === 'web_search') {
       try {
@@ -55,7 +72,7 @@ async function processWebSearchToolCalls(toolCalls, tavilyApiKey) {
       } catch (e) {
         results.push({
           toolCallId: toolCall.id,
-          result: `搜索失败: ${e.message}`
+          result: `搜索失败: ${(e as Error).message}`
         })
       }
     }
@@ -63,7 +80,12 @@ async function processWebSearchToolCalls(toolCalls, tavilyApiKey) {
   return results
 }
 
-function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
+interface ChatWindowProps {
+  onBotSettingsClick: () => void
+  onMobileMenuToggle: () => void
+}
+
+function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }: ChatWindowProps) {
   const { 
     apiConfig, models, bots, currentBotId, conversations,
     addMessage, updateLastMessage, clearConversation, deleteMessage, updateBot,
@@ -75,17 +97,17 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showModelSelect, setShowModelSelect] = useState(false)
-  const [editingIndex, setEditingIndex] = useState(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editContent, setEditContent] = useState('')
-  const [showForkModal, setShowForkModal] = useState(null)
+  const [showForkModal, setShowForkModal] = useState<number | null>(null)
   const [forkName, setForkName] = useState('')
   const [showMemoryPanel, setShowMemoryPanel] = useState(false)
-  const [pendingImages, setPendingImages] = useState([]) // 待发送的图片列表
-  const messagesEndRef = useRef(null)
-  const imageInputRef = useRef(null)
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   
   const currentBot = bots.find(bot => bot.id === currentBotId)
-  const messages = conversations[currentBotId] || []
+  const messages = (conversations[currentBotId || ''] || []) as ExtendedMessage[]
   
   // 判断当前模型是否为多模态模型
   const isCurrentModelMultimodal = useMemo(() => {
@@ -104,7 +126,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       const draft = getDraft(currentBotId)
       setInput(draft)
     }
-  }, [currentBotId])
+  }, [currentBotId, getDraft])
   
   // Auto-save draft
   useEffect(() => {
@@ -114,14 +136,14 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       }, 300)
       return () => clearTimeout(timer)
     }
-  }, [input, currentBotId])
+  }, [input, currentBotId, setDraft])
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
   
   // 处理图片上传
-  const handleImageUpload = (e) => {
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
     
@@ -132,7 +154,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       reader.onloadend = () => {
         setPendingImages(prev => [...prev, {
           id: Date.now() + Math.random(),
-          data: reader.result, // base64 data URL
+          data: reader.result as string,
           name: file.name
         }])
       }
@@ -144,17 +166,17 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
   }
   
   // 移除待发送的图片
-  const handleRemoveImage = (imageId) => {
+  const handleRemoveImage = (imageId: number) => {
     setPendingImages(prev => prev.filter(img => img.id !== imageId))
   }
   
-  const handleSend = async (customMessage = null) => {
+  const handleSend = async (customMessage: string | null = null) => {
     const messageContent = customMessage || input.trim()
     const hasImages = pendingImages.length > 0
     
     // 如果没有文本且没有图片，不发送
     if (!messageContent && !hasImages) return
-    if (isLoading || !currentBot) return
+    if (isLoading || !currentBot || !currentBotId) return
     
     // 检查 API 配置
     if (!apiConfig.apiKey) {
@@ -166,7 +188,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       return
     }
     
-    const userMessage = {
+    const userMessage: ExtendedMessage = {
       role: 'user',
       content: messageContent,
       timestamp: Date.now(),
@@ -208,7 +230,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       }
       
       // 构建当前用户消息（可能包含图片）
-      let currentUserMsg
+      let currentUserMsg: Record<string, unknown>
       if (hasImages && isCurrentModelMultimodal) {
         // 多模态格式：content 为数组
         currentUserMsg = {
@@ -254,13 +276,13 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
       if (!model) throw new Error('请先选择模型')
       
       // 判断是否启用网页搜索
-      const enableWebSearch = tavilyConfig.enabled && tavilyConfig.apiKey
+      const enableWebSearch = !!(tavilyConfig.enabled && tavilyConfig.apiKey)
       
       // 发送消息，启用相应的工具
       const result = await sendChatMessage(
         apiConfig.baseUrl,
         apiConfig.apiKey,
-        chatMessages,
+        chatMessages as Message[],
         model,
         currentBot.temperature,
         currentBot.maxTokens,
@@ -297,7 +319,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             
             // 构建工具结果消息
             const toolResultsMessages = searchResults.map(sr => ({
-              role: 'tool',
+              role: 'tool' as const,
               tool_call_id: sr.toolCallId,
               content: sr.result
             }))
@@ -306,7 +328,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             // 从 store 获取最新的消息内容（流式输出后的完整内容）
             const latestMessages = useStore.getState().conversations[currentBotId] || []
             const assistantMessage = {
-              role: 'assistant',
+              role: 'assistant' as const,
               content: latestMessages[latestMessages.length - 1]?.content || '',
               tool_calls: result.toolCalls
             }
@@ -327,7 +349,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             await sendChatMessage(
               apiConfig.baseUrl,
               apiConfig.apiKey,
-              newChatMessages,
+              newChatMessages as Message[],
               model,
               currentBot.temperature,
               currentBot.maxTokens,
@@ -342,8 +364,8 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
         }
       }
     } catch (error) {
-      if (error.message !== '生成已停止') {
-        updateLastMessage(currentBotId, `❌ ${error.message}`)
+      if ((error as Error).message !== '生成已停止') {
+        updateLastMessage(currentBotId, `❌ ${(error as Error).message}`)
       }
     } finally {
       setIsLoading(false)
@@ -351,14 +373,14 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     }
   }
   
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
   }
   
-  const handleCopy = (text) => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text)
   }
   
@@ -367,18 +389,18 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     setIsLoading(false)
   }
   
-  const handleEdit = (index) => {
+  const handleEdit = (index: number) => {
     if (index < 0 || index >= messages.length) return
     setEditingIndex(index)
     setEditContent(messages[index].content)
   }
   
-  const handleSaveEdit = (index) => {
+  const handleSaveEdit = (index: number) => {
     if (editContent.trim()) {
-      updateMessage(currentBotId, index, editContent.trim())
+      updateMessage(currentBotId!, index, editContent.trim())
       // If editing user message, delete all messages after and resend
       if (messages[index].role === 'user') {
-        deleteMessagesFrom(currentBotId, index + 1)
+        deleteMessagesFrom(currentBotId!, index + 1)
         setEditingIndex(null)
         setEditContent('')
         // Resend the edited message
@@ -390,22 +412,22 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     }
   }
   
-  const handleFork = (index) => {
+  const handleFork = (index: number) => {
     if (index < 0 || index >= messages.length) return
     setShowForkModal(index)
-    setForkName(`${currentBot.name} (分支)`)
+    setForkName(`${currentBot?.name || 'Bot'} (分支)`)
   }
   
   const handleConfirmFork = () => {
-    if (showForkModal !== null) {
+    if (showForkModal !== null && currentBotId) {
       forkConversation(currentBotId, showForkModal, forkName)
       setShowForkModal(null)
       setForkName('')
     }
   }
   
-  const handleRegenerate = async (index) => {
-    if (index < 1 || isLoading) return
+  const handleRegenerate = async (index: number) => {
+    if (index < 1 || isLoading || !currentBotId) return
     
     // Get the user message before deleting (using current messages reference)
     const lastUserMsg = messages[index - 1]
@@ -419,8 +441,8 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
     }
   }
   
-  const handleModelChange = (modelId) => {
-    if (currentBot) {
+  const handleModelChange = (modelId: string) => {
+    if (currentBot && currentBotId) {
       updateBot(currentBotId, { model: modelId })
     }
     setShowModelSelect(false)
@@ -530,17 +552,15 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
         ) : (
           messages.map((msg, index) => (
             <div key={index} className={`message ${msg.role}`}>
-              <div className="message-avatar">
-                {msg.role === 'user' ? (
-                  <User theme="outline" size="28" fill="#fff" />
-                ) : (
-                  currentBot.avatar ? (
+              {msg.role === 'assistant' && (
+                <div className="message-avatar">
+                  {currentBot.avatar ? (
                     <img src={currentBot.avatar} alt={currentBot.name} />
                   ) : (
                     <Robot theme="outline" size="28" fill="#4a90e2" />
-                  )
-                )}
-              </div>
+                  )}
+                </div>
+              )}
               
               <div className="message-content">
                 {editingIndex === index ? (
@@ -566,8 +586,9 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex]}
                         components={{
-                          code({ inline, className, children, ...props }) {
-                            if (inline) {
+                          code({ className, children, ...props }) {
+                            const isInline = !className
+                            if (isInline) {
                               return <code className={className} {...props}>{children}</code>
                             }
                             return <CodeBlock className={className}>{children}</CodeBlock>
@@ -615,7 +636,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
                     </>
                   )}
                   
-                  <button onClick={() => deleteMessage(currentBotId, index)} title="删除">
+                  <button onClick={() => currentBotId && deleteMessage(currentBotId, index)} title="删除">
                     <Delete theme="outline" size="14" fill="#999" />
                   </button>
                 </div>
@@ -722,7 +743,7 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }) {
             
             <button 
               className="clear-btn"
-              onClick={() => confirm('确定清空对话记录？') && clearConversation(currentBotId)}
+              onClick={() => confirm('确定清空对话记录？') && currentBotId && clearConversation(currentBotId)}
               title="清空对话"
             >
               <Delete theme="outline" size="20" fill="#999" />

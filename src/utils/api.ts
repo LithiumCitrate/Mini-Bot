@@ -1,4 +1,5 @@
 // API 工具函数
+import type { Message, Model } from '../store/useStore'
 
 // 多模态模型关键词列表（常见的支持图像/视觉的模型）
 const MULTIMODAL_KEYWORDS = [
@@ -23,10 +24,8 @@ const NON_MULTIMODAL_KEYWORDS = [
 
 /**
  * 判断模型是否为多模态模型
- * @param {string} modelId - 模型 ID
- * @returns {boolean} - 是否为多模态模型
  */
-export function isMultimodalModel(modelId) {
+export function isMultimodalModel(modelId: string): boolean {
   if (!modelId || typeof modelId !== 'string') return false
   
   const lowerId = modelId.toLowerCase()
@@ -54,8 +53,28 @@ export function isMultimodalModel(modelId) {
   return false
 }
 
+// 工具定义类型
+interface ToolFunction {
+  name: string
+  description: string
+  parameters: {
+    type: 'object'
+    properties: Record<string, {
+      type: string
+      description: string
+      enum?: string[]
+    }>
+    required: string[]
+  }
+}
+
+interface Tool {
+  type: 'function'
+  function: ToolFunction
+}
+
 // 定义 save_memory 工具
-export const memoryTools = [
+export const memoryTools: Tool[] = [
   {
     type: 'function',
     function: {
@@ -81,7 +100,7 @@ export const memoryTools = [
 ]
 
 // 定义 web_search 工具 (Tavily)
-export const webSearchTools = [
+export const webSearchTools: Tool[] = [
   {
     type: 'function',
     function: {
@@ -107,15 +126,15 @@ export const webSearchTools = [
 ]
 
 // 合并所有工具
-export const getAllTools = (enableMemory, enableWebSearch) => {
-  const tools = []
+export const getAllTools = (enableMemory: boolean, enableWebSearch: boolean): Tool[] => {
+  const tools: Tool[] = []
   if (enableMemory) tools.push(...memoryTools)
   if (enableWebSearch) tools.push(...webSearchTools)
   return tools
 }
 
 // 友好错误消息映射
-const errorMessages = {
+const errorMessages: Record<number, string> = {
   400: '请求格式错误，请检查参数设置',
   401: 'API Key 无效或已过期',
   403: '没有权限访问此 API，请检查 API Key 权限',
@@ -127,7 +146,7 @@ const errorMessages = {
 }
 
 // 解析错误
-function parseError(error, response) {
+function parseError(error: Error | null, response: Response | null): string {
   if (error?.name === 'AbortError') {
     return '生成已停止'
   }
@@ -153,8 +172,17 @@ function parseError(error, response) {
   return error?.message || '未知错误'
 }
 
+// 测试 API 连接结果
+export interface TestConnectionResult {
+  success: boolean
+  error?: string
+  responseTime: number
+  modelCount?: number
+  isCompatible?: boolean
+}
+
 // 测试 API 连接
-export async function testConnection(baseUrl, apiKey) {
+export async function testConnection(baseUrl: string, apiKey: string): Promise<TestConnectionResult> {
   const startTime = Date.now()
   
   try {
@@ -172,10 +200,10 @@ export async function testConnection(baseUrl, apiKey) {
       throw { error, response }
     }
     
-    let data
+    let data: { data?: unknown[] }
     try {
       data = await response.json()
-    } catch (e) {
+    } catch {
       return {
         success: false,
         error: '响应格式错误：服务器返回了非 JSON 数据',
@@ -192,7 +220,7 @@ export async function testConnection(baseUrl, apiKey) {
   } catch (err) {
     // 处理两种情况：1. 抛出的 { error, response } 对象  2. 网络错误
     if (err && typeof err === 'object' && 'error' in err && 'response' in err) {
-      const { error, response } = err
+      const { error, response } = err as { error: Error; response: Response }
       return {
         success: false,
         error: parseError(error, response),
@@ -202,17 +230,17 @@ export async function testConnection(baseUrl, apiKey) {
     // 网络错误或其他异常
     return {
       success: false,
-      error: parseError(err, null),
+      error: parseError(err as Error, null),
       responseTime: Date.now() - startTime
     }
   }
 }
 
 // 获取模型列表
-export async function fetchModels(baseUrl, apiKey) {
+export async function fetchModels(baseUrl: string, apiKey: string): Promise<Model[]> {
   const url = `${baseUrl}/models`
   
-  let response
+  let response: Response
   try {
     response = await fetch(url, {
       headers: {
@@ -221,7 +249,7 @@ export async function fetchModels(baseUrl, apiKey) {
       }
     })
   } catch (error) {
-    throw new Error(parseError(error))
+    throw new Error(parseError(error as Error, null))
   }
   
   if (!response.ok) {
@@ -230,24 +258,48 @@ export async function fetchModels(baseUrl, apiKey) {
   
   try {
     const data = await response.json()
-    const rawModels = data.data || []
+    const rawModels: Array<{ id?: string; name?: string; [key: string]: unknown }> = data.data || []
     
     // 为每个模型添加 isMultimodal 属性
-    return rawModels.map(model => ({
-      ...model,
-      id: model.id || model.name || model,
-      isMultimodal: isMultimodalModel(model.id || model.name || model)
-    }))
-  } catch (error) {
+    return rawModels.map(model => {
+      const modelId = model.id || model.name || String(model)
+      return {
+        ...model,
+        id: modelId,
+        isMultimodal: isMultimodalModel(modelId)
+      }
+    })
+  } catch {
     throw new Error('响应格式错误：服务器返回了非 JSON 数据')
   }
 }
 
+// 工具调用类型
+export interface ToolCall {
+  id: string
+  type: 'function'
+  function: {
+    name: string
+    arguments: string
+  }
+}
+
 // 发送聊天消息（流式）
-export async function sendChatMessage(baseUrl, apiKey, messages, model, temperature = 0.7, maxTokens = 2000, onChunk, signal, enableMemoryTools = false, enableWebSearch = false) {
+export async function sendChatMessage(
+  baseUrl: string,
+  apiKey: string,
+  messages: Message[],
+  model: string,
+  temperature: number = 0.7,
+  maxTokens: number = 2000,
+  onChunk: (content: string) => void,
+  signal: AbortSignal,
+  enableMemoryTools: boolean = false,
+  enableWebSearch: boolean = false
+): Promise<{ toolCalls: ToolCall[] }> {
   const url = `${baseUrl}/chat/completions`
   
-  const requestBody = {
+  const requestBody: Record<string, unknown> = {
     model,
     messages,
     temperature,
@@ -274,7 +326,7 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
     if (error.name === 'AbortError') {
       throw new Error('生成已停止')
     }
-    throw new Error(parseError(error))
+    throw new Error(parseError(error, null))
   })
   
   if (!response.ok) {
@@ -288,7 +340,7 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
-  let toolCalls = [] // 收集工具调用
+  let toolCalls: ToolCall[] = [] // 收集工具调用
   
   try {
     while (true) {
@@ -336,7 +388,7 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
                 }
               }
             }
-          } catch (e) {
+          } catch {
             // 解析失败，跳过此条数据
           }
         }
@@ -346,7 +398,7 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
     // 返回工具调用（如果有）
     return { toolCalls: toolCalls.filter(tc => tc.id) }
   } catch (error) {
-    if (error.name === 'AbortError') {
+    if ((error as Error).name === 'AbortError') {
       throw new Error('生成已停止')
     }
     throw error
@@ -354,10 +406,14 @@ export async function sendChatMessage(baseUrl, apiKey, messages, model, temperat
 }
 
 // Tavily 网页搜索
-export async function tavilySearch(apiKey, query, searchDepth = 'basic') {
+export async function tavilySearch(
+  apiKey: string,
+  query: string,
+  searchDepth: 'basic' | 'advanced' = 'basic'
+): Promise<string> {
   const url = 'https://api.tavily.com/search'
   
-  let response
+  let response: Response
   try {
     response = await fetch(url, {
       method: 'POST',
@@ -376,23 +432,27 @@ export async function tavilySearch(apiKey, query, searchDepth = 'basic') {
       })
     })
   } catch (error) {
-    throw new Error(`网络请求失败: ${error.message}`)
+    throw new Error(`网络请求失败: ${(error as Error).message}`)
   }
   
   if (!response.ok) {
-    let errorData = {}
+    let errorData: { detail?: string } = {}
     try {
       errorData = await response.json()
-    } catch (e) {
+    } catch {
       // 忽略 JSON 解析错误
     }
     throw new Error(errorData.detail || `Tavily API 错误 (${response.status})`)
   }
   
-  let data
+  let data: {
+    answer?: string
+    results?: Array<{ title: string; url: string; content: string }>
+    images?: Array<{ url: string; description?: string }>
+  }
   try {
     data = await response.json()
-  } catch (error) {
+  } catch {
     throw new Error('Tavily 响应格式错误：服务器返回了非 JSON 数据')
   }
   

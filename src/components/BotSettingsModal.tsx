@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useState, ChangeEvent } from 'react'
 import { Close, Robot, Edit, Text, Adjustment, ImageFiles, History, Bookmark } from '@icon-park/react'
-import useStore from '../store/useStore'
+import useStore, { Bot } from '../store/useStore'
 import './BotSettingsModal.css'
 
-function BotSettingsModal({ bot, onClose }) {
+interface BotSettingsModalProps {
+  bot: Bot
+  onClose: () => void
+}
+
+function BotSettingsModal({ bot, onClose }: BotSettingsModalProps) {
   const { updateBot, deleteBot } = useStore()
   const [name, setName] = useState(bot?.name || '')
   const [avatar, setAvatar] = useState(bot?.avatar || '')
@@ -17,12 +22,12 @@ function BotSettingsModal({ bot, onClose }) {
   // 防护：bot 为空时不渲染
   if (!bot) return null
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0]
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setAvatar(reader.result)
+        setAvatar(reader.result as string)
       }
       reader.readAsDataURL(file)
     }

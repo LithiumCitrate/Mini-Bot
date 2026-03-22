@@ -4,6 +4,17 @@ const path = require('path')
 // 判断是否为开发环境
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
+function getAppIconPath() {
+  if (isDev) {
+    return path.join(
+      __dirname,
+      '../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png'
+    )
+  }
+
+  return path.join(process.resourcesPath, 'ic_launcher.png')
+}
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -14,7 +25,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    icon: path.join(__dirname, '../public/icon.png'),
+    icon: getAppIconPath(),
     title: 'Mini Bot',
   })
 

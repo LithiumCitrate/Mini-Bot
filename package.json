@@ -57,10 +57,17 @@
     "directories": {
       "output": "release"
     },
+    "extraResources": [
+      {
+        "from": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+        "to": "ic_launcher.png"
+      }
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*"
     ],
+    "icon": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
     "win": {
       "target": [
         {

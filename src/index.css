@@ -202,7 +202,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  overscroll-behavior: none;
+  overscroll-behavior-x: none;
 }
 
 #root {

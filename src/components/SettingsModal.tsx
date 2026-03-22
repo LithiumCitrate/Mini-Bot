@@ -4,6 +4,7 @@ import { Close, Api, Refresh, CheckOne, Loading, Download, Upload,
 } from '@icon-park/react'
 import useStore from '../store/useStore'
 import { fetchModels, testConnection, TestConnectionResult } from '../utils/api'
+import packageJson from '../../package.json'
 import './SettingsModal.css'
 
 interface SettingsModalProps {
@@ -291,7 +292,7 @@ function SettingsModal({ onClose }: SettingsModalProps) {
             <h3>关于</h3>
             <div className="about-info">
               <p><strong>Mini Bot</strong> - 轻量级 AI 聊天助手</p>
-              <p>版本: 0.2.0</p>
+              <p>版本: {packageJson.version}</p>
               <p className="privacy">所有数据仅存储在本地，绝不上传到服务器</p>
             </div>
           </div>

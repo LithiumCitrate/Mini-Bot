@@ -1,5 +1,5 @@
 // API 工具函数
-import type { Message, Model } from '../store/useStore'
+import type { Message, Model, SearchSource } from '../store/useStore'
 
 // 多模态模型关键词列表（常见的支持图像/视觉的模型）
 const MULTIMODAL_KEYWORDS = [
@@ -403,13 +403,6 @@ export async function sendChatMessage(
     }
     throw error
   }
-}
-
-// 搜索来源类型
-export interface SearchSource {
-  title: string
-  url: string
-  content: string
 }
 
 // Tavily 搜索结果类型

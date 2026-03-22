@@ -30,10 +30,17 @@ export interface Bot {
   pinned?: boolean
 }
 
+export interface SearchSource {
+  title: string
+  url: string
+  content: string
+}
+
 export interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp?: number
+  sources?: SearchSource[]  // 网页搜索来源
 }
 
 export interface StoreState {
@@ -69,6 +76,7 @@ export interface StoreState {
   setCurrentBot: (botId: string | null) => void
   addMessage: (botId: string, message: Message) => void
   updateLastMessage: (botId: string, content: string) => void
+  updateLastMessageSources: (botId: string, sources: SearchSource[]) => void
   clearConversation: (botId: string) => void
   deleteMessage: (botId: string, messageIndex: number) => void
   updateMessage: (botId: string, messageIndex: number, newContent: string) => void
@@ -213,6 +221,27 @@ const useStore = create<StoreState>()(
           newMessages[newMessages.length - 1] = {
             ...newMessages[newMessages.length - 1],
             content: `${newMessages[newMessages.length - 1].content || ''}${content || ''}`
+          }
+          
+          return {
+            conversations: {
+              ...state.conversations,
+              [botId]: newMessages
+            }
+          }
+        })
+      },
+      
+      // 更新最后一条消息的来源（用于网页搜索）
+      updateLastMessageSources: (botId, sources) => {
+        set((state) => {
+          const messages = state.conversations[botId] || []
+          if (messages.length === 0) return state
+          
+          const newMessages = [...messages]
+          newMessages[newMessages.length - 1] = {
+            ...newMessages[newMessages.length - 1],
+            sources
           }
           
           return {

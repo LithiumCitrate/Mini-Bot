@@ -405,12 +405,25 @@ export async function sendChatMessage(
   }
 }
 
+// 搜索来源类型
+export interface SearchSource {
+  title: string
+  url: string
+  content: string
+}
+
+// Tavily 搜索结果类型
+export interface TavilySearchResult {
+  formattedResult: string  // 格式化后的文本结果，用于发送给模型
+  sources: SearchSource[]   // 来源列表，用于 UI 展示
+}
+
 // Tavily 网页搜索
 export async function tavilySearch(
   apiKey: string,
   query: string,
   searchDepth: 'basic' | 'advanced' = 'basic'
-): Promise<string> {
+): Promise<TavilySearchResult> {
   const url = 'https://api.tavily.com/search'
   
   let response: Response
@@ -456,6 +469,13 @@ export async function tavilySearch(
     throw new Error('Tavily 响应格式错误：服务器返回了非 JSON 数据')
   }
   
+  // 提取来源列表
+  const sources: SearchSource[] = (data.results || []).map(item => ({
+    title: item.title,
+    url: item.url,
+    content: item.content
+  }))
+  
   // 格式化搜索结果
   let result = ''
   if (data.answer) {
@@ -480,5 +500,5 @@ export async function tavilySearch(
     })
   }
   
-  return result
+  return { formattedResult: result, sources }
 }

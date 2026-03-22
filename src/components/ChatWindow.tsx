@@ -10,8 +10,9 @@ import {
   CheckOne, Close, Bookmark, Eyes, PictureOne, CloseSmall
 } from '@icon-park/react'
 import useStore, { Message } from '../store/useStore'
-import { sendChatMessage, tavilySearch, isMultimodalModel, ToolCall } from '../utils/api'
+import { sendChatMessage, tavilySearch, isMultimodalModel, ToolCall, SearchSource } from '../utils/api'
 import CodeBlock from './CodeBlock.tsx'
+import SourceCard from './SourceCard.tsx'
 import './ChatWindow.css'
 
 interface PendingImage {
@@ -22,6 +23,7 @@ interface PendingImage {
 
 interface ExtendedMessage extends Message {
   images?: string[]
+  sources?: SearchSource[]
 }
 
 // 处理记忆工具调用
@@ -56,8 +58,8 @@ function processMemoryToolCalls(
 async function processWebSearchToolCalls(
   toolCalls: ToolCall[],
   tavilyApiKey: string
-): Promise<{ toolCallId: string; result: string }[]> {
-  const results: { toolCallId: string; result: string }[] = []
+): Promise<{ toolCallId: string; result: string; sources: SearchSource[] }[]> {
+  const results: { toolCallId: string; result: string; sources: SearchSource[] }[] = []
   for (const toolCall of toolCalls) {
     if (toolCall.function.name === 'web_search') {
       try {
@@ -67,12 +69,14 @@ async function processWebSearchToolCalls(
         const searchResult = await tavilySearch(tavilyApiKey, query, search_depth)
         results.push({
           toolCallId: toolCall.id,
-          result: searchResult
+          result: searchResult.formattedResult,
+          sources: searchResult.sources
         })
       } catch (e) {
         results.push({
           toolCallId: toolCall.id,
-          result: `搜索失败: ${(e as Error).message}`
+          result: `搜索失败: ${(e as Error).message}`,
+          sources: []
         })
       }
     }
@@ -88,7 +92,7 @@ interface ChatWindowProps {
 function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }: ChatWindowProps) {
   const { 
     apiConfig, models, bots, currentBotId, conversations,
-    addMessage, updateLastMessage, clearConversation, deleteMessage, updateBot,
+    addMessage, updateLastMessage, updateLastMessageSources, clearConversation, deleteMessage, updateBot,
     setAbortController, stopGeneration,
     setDraft, getDraft, forkConversation, updateMessage, deleteMessagesFrom,
     tavilyConfig
@@ -314,6 +318,9 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }: ChatWindowProps)
           const searchResults = await processWebSearchToolCalls(result.toolCalls, tavilyConfig.apiKey)
           
           if (searchResults.length > 0) {
+            // 收集所有来源
+            const allSources = searchResults.flatMap(sr => sr.sources)
+            
             // 添加搜索提示
             updateLastMessage(currentBotId, '\n\n🔍 正在搜索网页...')
             
@@ -360,6 +367,11 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }: ChatWindowProps)
               false, // 第二次请求不需要记忆工具
               false  // 第二次请求不需要搜索工具
             )
+            
+            // 存储搜索来源到消息
+            if (allSources.length > 0) {
+              updateLastMessageSources(currentBotId, allSources)
+            }
           }
         }
       }
@@ -601,6 +613,11 @@ function ChatWindow({ onBotSettingsClick, onMobileMenuToggle }: ChatWindowProps)
                       msg.content
                     )
                     }
+                    
+                    {/* 显示搜索来源 */}
+                    {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
+                      <SourceCard sources={msg.sources} />
+                    )}
                   </div>
                 )}
                 
